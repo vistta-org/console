@@ -16,4 +16,4 @@ jobs:
       - name: Release
         run: |
           echo "Release ${{ gitea.event.issue.title }}"
-          echo "Is Release ${{ gitea.event.issue.labels[0].name == "Project/Release" }}"
+          npm version
