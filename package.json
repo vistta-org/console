@@ -1,0 +1,25 @@
+{
+  "name": "@vistta/console",
+  "version": "0.0.0",
+  "description": "Vistta Console Wrapper",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://git.vistta.org/Vistta/vistta.git"
+  },
+  "scripts": {
+    "setup": "",
+    "setup:test": ""
+  },
+  "author": "Tiago Terenas Almeida",
+  "license": "CC BY-NC-ND 4.0 DEED",
+  "files": [
+    "LICENSE",
+    "tsconfig.json"
+  ],
+  "dependencies": {
+    "@vistta/date-time": "*"
+  }
+}
