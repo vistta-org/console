@@ -1,0 +1,19 @@
+name: Release Creation Action
+on:
+  issues:
+    types: [labeled]
+jobs:
+  Release:
+    if: gitea.event.issue.labels[0].name == "Project/Release"
+    runs-on: ubuntu-latest
+    container:
+      image: node:22
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: "development"
+          clean: true
+
+      - name: Release
+        run: |
+          echo "Release ${{ gitea.event.issue.title }}"
