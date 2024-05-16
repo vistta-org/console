@@ -4,7 +4,7 @@ on:
     types: [labeled]
 jobs:
   Release:
-    if: gitea.event.issue.labels[0].name == "Project/Release"
+    if: ${{ gitea.event.issue.labels[0].name == "Project/Release" }}
     runs-on: ubuntu-latest
     container:
       image: node:22
