@@ -4,7 +4,6 @@ on:
     types: [labeled]
 jobs:
   Release:
-    if: ${{ gitea.event.issue.labels[0].name == "Project/Release" }}
     runs-on: ubuntu-latest
     container:
       image: node:22
@@ -17,3 +16,4 @@ jobs:
       - name: Release
         run: |
           echo "Release ${{ gitea.event.issue.title }}"
+          echo "Is Release ${{ gitea.event.issue.labels[0].name == "Project/Release" }}"
