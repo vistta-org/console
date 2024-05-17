@@ -9,12 +9,10 @@ jobs:
       image: node:22
     if: contains(github.event.pull_request.labels.*.name, 'Project/Release')
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           clean: true
 
-      - name: Print full event payload
-        run: |
-          version="${{ gitea.event.pull_request.milestone.title }}"
-          package_version=$(jq -r '.version' package.json)
-          echo "Release: $version over $package_version"
+      - uses: vistta/template@package-update-beta
+        with:
+          version: '${{ gitea.event.pull_request.milestone.title }}'
