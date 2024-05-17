@@ -16,8 +16,9 @@ jobs:
       - name: Print full event payload
         run: |
           version="${{ gitea.event.pull_request.milestone.title }}"
+          regex="v[0-9]+\.[0-9]+\.[0-9]+"
           echo "Release: $version"
-          if [[ "$version" =~ v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          if [[ "$version" =~ $regex ]]; then
             package_version=$(jq -r .version package.json)
             if [[ "$version" > "$package_version" ]]; then
               echo "PR version is above package.json version."
