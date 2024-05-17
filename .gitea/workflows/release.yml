@@ -24,3 +24,4 @@ jobs:
         uses: ./.gitea/actions/update-package
         with:
           version: '${{ gitea.event.pull_request.milestone.title }}'
+          ref: ${{ gitea.event.pull_request.base.ref }}
