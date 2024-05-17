@@ -15,6 +15,7 @@ jobs:
 
       - name: Print full event payload
         run: |
-          release=${{ gitea.event.pull_request.milestone.title }}
+          echo "Release: ${{ gitea.event.pull_request.milestone.title }}"
+          release="${{ gitea.event.pull_request.milestone.title }}"
           echo "Release: $(release)"
           
