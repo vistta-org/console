@@ -1,7 +1,7 @@
 name: Release Creation Action
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, milestoned]
 jobs:
   Release:
     runs-on: ubuntu-latest
