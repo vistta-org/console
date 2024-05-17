@@ -15,9 +15,8 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: "vistta/actions"
+          repository: vistta/actions
           path: "./actions"
-          clean: true
 
       - name: "Update Package"
         uses: ./actions/package-update
