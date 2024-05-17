@@ -7,6 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:22
+    if: contains(github.event.pull_request.labels.*.name, 'Project/Release')
     steps:
       - uses: actions/checkout@v3
         with:
@@ -14,5 +15,6 @@ jobs:
 
       - name: Print full event payload
         run: |
-          echo "Event Payload:"
-          echo "${{ toJson(gitea.event) }}"
+          release=${{ gitea.event.pull_request.milestone.title }}
+          echo "Release: $(release)"
+          
