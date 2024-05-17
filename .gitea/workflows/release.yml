@@ -12,7 +12,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: true
+          
+      - uses: actions/checkout@v4
+        with:
+          repository: "vistta/actions"
+          path: "./.gitea/actions"
+          clean: true
 
-      - uses: http://${{ secrets.GIT_TOKEN }}:@192.168.86.22:9080/vistta/template@package-update-beta
+      - name: "Update Package"
+        uses: ./.gitea/actions/package-update
         with:
           version: '${{ gitea.event.pull_request.milestone.title }}'
