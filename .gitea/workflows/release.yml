@@ -18,9 +18,9 @@ jobs:
           repository: vistta/actions
           ref: master
           token: ${{ secrets.GIT_TOKEN }}
-          path: "./actions"
+          path: "./.gitea/actions"
 
       - name: "Update Package"
-        uses: ./actions/package-update
+        uses: ./.gitea/actions/update-package
         with:
           version: '${{ gitea.event.pull_request.milestone.title }}'
