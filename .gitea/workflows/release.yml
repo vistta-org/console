@@ -7,12 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:22
-    if: contains(github.event.pull_request.labels.*.name, 'Project/Release')
+    if: contains(gitea.event.pull_request.labels.*.name, 'Project/Release')
     steps:
       - uses: actions/checkout@v4
         with:
           clean: true
 
-      - uses: vistta/template@package-update-beta
+      - uses: https://git.vistta.org/vistta/template@package-update-beta
         with:
           version: '${{ gitea.event.pull_request.milestone.title }}'
