@@ -13,10 +13,6 @@ jobs:
         with:
           clean: true
 
-      - name: Print full event payload
-        run: |
-          echo "Event Payload:"
-          echo "${{ toJson(gitea) }}"          
-#      - uses: https://git.vistta.org/vistta/template@package-update-beta
-#        with:
-#          version: '${{ gitea.event.pull_request.milestone.title }}'
+      - uses: ${{ gitea.server_url }}/vistta/template@package-update-beta
+        with:
+          version: '${{ gitea.event.pull_request.milestone.title }}'
