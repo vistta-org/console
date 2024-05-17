@@ -12,14 +12,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: true
-          
+
       - uses: actions/checkout@v4
         with:
           repository: "vistta/actions"
-          path: "./.gitea/actions"
+          path: "./actions"
           clean: true
 
       - name: "Update Package"
-        uses: ./.gitea/actions/package-update
+        uses: ./actions/package-update
         with:
           version: '${{ gitea.event.pull_request.milestone.title }}'
