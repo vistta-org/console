@@ -15,7 +15,15 @@ jobs:
 
       - name: Print full event payload
         run: |
-          echo "Release: ${{ gitea.event.pull_request.milestone.title }}"
-          release="${{ gitea.event.pull_request.milestone.title }}"
-          echo "Release: $(release)"
-          
+          version="${{ gitea.event.pull_request.milestone.title }}"
+          echo "Release: $version"
+          if [[ "$version" =~ "v[0-9]+\.[0-9]+\.[0-9]+" ]]; then
+            package_version=$(jq -r .version package.json)
+            if [[ "$version" > "$package_version" ]]; then
+              echo "PR version is above package.json version."
+            else
+              echo "PR version is not above package.json version."
+            fi
+          else
+            echo "Invalid version format in PR title."
+          fi
