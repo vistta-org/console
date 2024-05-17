@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: vistta/actions
+          ref: master
+          token: ${{ secrets.GIT_TOKEN }}
           path: "./actions"
 
       - name: "Update Package"
