@@ -13,6 +13,6 @@ jobs:
         with:
           clean: true
 
-      - uses: http://${{ gitea.token }}:@192.168.86.22:9080/vistta/template@package-update-beta
+      - uses: http://${{ secrets.GIT_TOKEN }}:@192.168.86.22:9080/vistta/template@package-update-beta
         with:
           version: '${{ gitea.event.pull_request.milestone.title }}'
