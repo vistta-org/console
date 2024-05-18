@@ -24,7 +24,7 @@ jobs:
           git config user.name "devops"
       - 
         name: Setup Node
-        run: npm ci & npm run setup
+        run: npm ci
       - 
         name: Checkout
         uses: ./.gitea/actions/checkout
