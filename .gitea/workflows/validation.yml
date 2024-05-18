@@ -21,7 +21,7 @@ jobs:
         name: Setup Node
         run: npm ci
       - 
-        name: "Debug"
+        name: Checkout
         uses: ./.gitea/actions/checkout
       - 
         name: Validations
@@ -30,4 +30,4 @@ jobs:
       - 
         name: Unit Tests
         run: |
-          echo "Unit Tests"
+          npm run test
