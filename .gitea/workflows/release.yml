@@ -15,18 +15,16 @@ jobs:
         with:
           ref: ${{ gitea.event.pull_request.head.ref }}
 
-      - name: Template
-        run: |
-          echo "${{ gitea.event.pull_request.labels[0].name }}"
-#      - uses: actions/checkout@v4
-#        with:
-#          repository: vistta/actions
-#          ref: master
-#          token: ${{ secrets.GIT_TOKEN }}
-#          path: "./.gitea/actions"
+      - uses: actions/checkout@v4
+        with:
+          repository: vistta/actions
+          ref: master
+          token: ${{ secrets.GIT_TOKEN }}
+          path: "./.gitea/actions"
 
-#      - name: "Start Release"
-#        uses: ./.gitea/actions/start-release
-#        with:
-#          version: '${{ gitea.event.pull_request.milestone.title }}'
-#          ref: ${{ gitea.event.pull_request.head.ref }}
+      - name: "Start Release"
+        uses: ./.gitea/actions/start-release
+        with:
+          type: '${{ gitea.event.pull_request.labels[0].name }}'
+          commit: ${{ gitea.event.pull_request.head.ref }}
+          token: ${{ secrets.GIT_TOKEN }}
