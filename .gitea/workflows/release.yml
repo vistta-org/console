@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:22
-    if: ${{ github.event.pull_request.labels[0].name == 'Project/Release*' && github.event.pull_request.milestone == null }}
+    if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -17,7 +17,7 @@ jobs:
 
       - name: Template
         run: |
-          echo "${{ github.event.pull_request.labels }}"
+          echo "${{ gitea.event.pull_request.labels[0].name }}"
 #      - uses: actions/checkout@v4
 #        with:
 #          repository: vistta/actions
