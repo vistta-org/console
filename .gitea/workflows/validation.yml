@@ -1,0 +1,17 @@
+name: Project Validation
+on:
+  pull_request:
+    types: [synchronize]
+    branches:    
+      - master
+jobs:
+  Release:
+    runs-on: ubuntu-latest
+    container:
+      image: node:22
+#    if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
+    steps:
+      - name: Print full event payload
+        run: |
+          echo "Event Payload:"
+          echo "${{ toJson(gitea.event) }}"

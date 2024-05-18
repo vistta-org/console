@@ -1,4 +1,4 @@
-name: Release Start Action
+name: Project Release Start
 on:
   pull_request:
     types: [labeled]
