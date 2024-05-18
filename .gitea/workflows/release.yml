@@ -1,27 +1,30 @@
 name: Release Creation Action
 on:
   pull_request:
-    types: [labeled, milestoned]
+    types: [labeled]
 jobs:
   Release:
     runs-on: ubuntu-latest
     container:
       image: node:22
-    if: contains(gitea.event.pull_request.labels.*.name, 'Project/Release')
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'Project/Release') && github.event.pull_request.milestone == null }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ gitea.event.pull_request.head.ref }}
 
-      - uses: actions/checkout@v4
-        with:
-          repository: vistta/actions
-          ref: master
-          token: ${{ secrets.GIT_TOKEN }}
-          path: "./.gitea/actions"
+      - name: Template
+        run: |
+          echo "${{ github.event.pull_request.labels }}"
+#      - uses: actions/checkout@v4
+#        with:
+#          repository: vistta/actions
+#          ref: master
+#          token: ${{ secrets.GIT_TOKEN }}
+#          path: "./.gitea/actions"
 
-      - name: "Update Package"
-        uses: ./.gitea/actions/update-package
-        with:
-          version: '${{ gitea.event.pull_request.milestone.title }}'
-          ref: ${{ gitea.event.pull_request.head.ref }}
+#      - name: "Update Package"
+#        uses: ./.gitea/actions/update-package
+#        with:
+#          version: '${{ gitea.event.pull_request.milestone.title }}'
+#          ref: ${{ gitea.event.pull_request.head.ref }}
