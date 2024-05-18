@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Print full event payload
         run: |
-          echo "${{ toJson(gitea) }}"
+          echo "${{ gitea }}"
