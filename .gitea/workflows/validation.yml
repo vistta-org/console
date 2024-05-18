@@ -10,9 +10,13 @@ jobs:
     container:
       image: node:22
     steps:
-      - 
-        name: "Checkout"
+      -
+        name: "Setup"
         uses: actions/checkout@v4
+        with:
+          repository: vistta/vistta
+          ref: ${{ gitea.event.pull_request.head.ref }}
+          token: ${{ secrets.GIT_TOKEN }}
       - 
         name: NPM Setup
         run: npm ci
