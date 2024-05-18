@@ -1,4 +1,4 @@
-name: Release Creation Action
+name: Release Start Action
 on:
   pull_request:
     types: [labeled]
@@ -11,11 +11,13 @@ jobs:
       image: node:22
     if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
     steps:
-      - uses: actions/checkout@v4
+      - name: "Checkout"
+        uses: actions/checkout@v4
         with:
           ref: ${{ gitea.event.pull_request.head.ref }}
 
-      - uses: actions/checkout@v4
+      - name: "Setup Actions"
+        uses: actions/checkout@v4
         with:
           repository: vistta/actions
           ref: master
@@ -26,5 +28,4 @@ jobs:
         uses: ./.gitea/actions/start-release
         with:
           type: '${{ gitea.event.pull_request.labels[0].name }}'
-          commit: ${{ gitea.event.pull_request.head.ref }}
           token: ${{ secrets.GIT_TOKEN }}
