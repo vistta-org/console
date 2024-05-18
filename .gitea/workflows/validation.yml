@@ -16,7 +16,6 @@ jobs:
         with:
           repository: vistta/vistta
           ref: ${{ gitea.event.pull_request.head.ref }}
-          token: ${{ secrets.GIT_TOKEN }}
           submodules: true
       - 
         name: Setup Node
