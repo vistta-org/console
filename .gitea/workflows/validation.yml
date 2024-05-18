@@ -11,15 +11,18 @@ jobs:
       image: node:22
     steps:
       -
-        name: "Setup"
+        name: Setup Env
         uses: actions/checkout@v4
         with:
           repository: vistta/vistta
           ref: ${{ gitea.event.pull_request.head.ref }}
           token: ${{ secrets.GIT_TOKEN }}
       - 
-        name: NPM Setup
+        name: Setup Node
         run: npm ci
+      - 
+        name: "Debug"
+        uses: ./.gitea/actions/checkout
       - 
         name: Validations
         run: |
