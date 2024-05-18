@@ -28,4 +28,3 @@ jobs:
         uses: ./.gitea/actions/start-release
         with:
           type: '${{ gitea.event.pull_request.labels[0].name }}'
-          token: ${{ secrets.GIT_TOKEN }}
