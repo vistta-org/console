@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Print full event payload
         run: |
-          echo "${{ toJson(gitea.event) }}"
+          echo "${{ toJson(github.event) }}"
 #    if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
