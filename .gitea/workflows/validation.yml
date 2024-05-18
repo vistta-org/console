@@ -10,6 +10,17 @@ jobs:
     container:
       image: node:22
     steps:
-      - name: Print full event payload
+      - 
+        name: "Checkout"
+        uses: actions/checkout@v4
+      - 
+        name: NPM Setup
+        run: npm ci
+      - 
+        name: Validations
         run: |
-          echo "${{ gitea }}"
+          echo "Validations"
+      - 
+        name: Unit Tests
+        run: |
+          echo "Unit Tests"
