@@ -5,13 +5,12 @@ on:
     branches:    
       - master
 jobs:
-  Release:
+  Validation:
     runs-on: ubuntu-latest
     container:
       image: node:22
-#    if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
     steps:
       - name: Print full event payload
         run: |
-          echo "Event Payload:"
           echo "${{ toJson(gitea.event) }}"
+#    if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
