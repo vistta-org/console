@@ -22,13 +22,13 @@ jobs:
         name: Setup Node
         run: npm ci
       - 
-        name: Setup Node
-        run: |
-          working-directory ./packages/console
-          cwd ./packages/console
+        name: Eslint Validation
+        working-directory: ./packages/console
+        run: npx eslint .
       - 
-        name: Setup Node
-        run: ls
+        name: Typescript Validation
+        working-directory: ./packages/console
+        run: tsc eslint .
 #      - 
 #        name: Checkout
 #        uses: ./.gitea/actions/checkout
