@@ -19,7 +19,6 @@ jobs:
           token: ${{ secrets.GIT_TOKEN }}
       - 
         name: Checkout Modules
-        working-directory: ./packages/console
         run: git submodule update --remote
       - 
         name: Setup Node
