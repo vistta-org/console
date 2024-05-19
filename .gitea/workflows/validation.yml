@@ -24,7 +24,7 @@ jobs:
       - 
         name: Pull Package
         working-directory: ./packages/console
-        run: git checkout -q ${{ gitea.event.pull_request.head.ref }}
+        run: git checkout -q
       - 
         name: Module Validation
         working-directory: ./packages/console
