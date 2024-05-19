@@ -17,7 +17,8 @@ jobs:
           repository: vistta/vistta
           ref: ${{ gitea.event.pull_request.head.ref }}
           token: ${{ secrets.GIT_TOKEN }}
-          submodules: true
+          fetch-depth: 0
+          recursive: true
       - 
         name: Checkout Modules
         run: git submodule update --remote
