@@ -16,12 +16,7 @@ jobs:
         with:
           repository: vistta/vistta
           ref: ${{ gitea.event.pull_request.head.ref }}
-#          token: ${{ secrets.GIT_TOKEN }}
-      - 
-        name: Debug
-        run: |
-          git config user.email "devops@vistta.org"
-          git config user.name "devops"
+          token: ${{ secrets.GIT_TOKEN }}
       - 
         name: Setup Node
         run: npm ci
