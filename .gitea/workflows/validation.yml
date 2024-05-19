@@ -18,7 +18,7 @@ jobs:
           ref: ${{ gitea.event.pull_request.head.ref }}
           token: ${{ secrets.GIT_TOKEN }}
           fetch-depth: 0
-          submodule: true
+          submodules: true
       - 
         name: Checkout Modules
         run: git submodule update --remote
