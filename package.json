@@ -7,10 +7,10 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://git.vistta.org/Vistta/vistta.git"
+    "url": "https://git.vistta.org/vistta/console.git"
   },
   "scripts": {
-    "setup": "",
+    "postinstall": "",
     "test": "ls"
   },
   "author": "Tiago Terenas Almeida",
