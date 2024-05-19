@@ -19,7 +19,7 @@ jobs:
           token: ${{ secrets.GIT_TOKEN }}
       - 
         name: Checkout Modules
-        run: git submodule update --remote
+        run: git submodule update --init --remote
       - 
         name: Setup Node
         run: npm ci
