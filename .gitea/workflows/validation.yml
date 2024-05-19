@@ -20,29 +20,6 @@ jobs:
           fetch-depth: 0
           submodules: true
       - 
-        name: Checkout Modules
-        run: git submodule update --remote
-      - 
-        name: Setup Node
-        run: npm ci
-      - 
-        name: Module Validation
-        working-directory: ./packages/console
-        run: npx vistta outdated
-      - 
-        name: Eslint Validation
-        working-directory: ./packages/console
-        run: npx eslint .
-      - 
-        name: Typescript Validation
-        working-directory: ./packages/console
-        run: npx tsc
-      - 
-        name: Unit Tests
-        working-directory: ./packages/console
-        run: npx vistta test
-      - 
-        name: Close Issue
-        uses: ./.gitea/actions/close-issue
+        uses: ./.gitea/workflows/reusable-workflow.yml
         with:
-          directory: ./packages/console
+          module: "console"
