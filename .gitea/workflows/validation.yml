@@ -21,6 +21,6 @@ jobs:
           submodules: true
       - 
         name: Project Validation
-        uses: ./.gitea/workflows/validation.yml
+        uses: ./.gitea/actions/validation
         with:
           module: "console"
