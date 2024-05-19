@@ -19,11 +19,12 @@ jobs:
           submodules: true
           token: ${{ secrets.GIT_TOKEN }}
       - 
-        name: Update Submodules
-        run: git submodule update --remote
-      - 
         name: Setup Node
         run: npm ci
+      - 
+        name: Pull Package
+        working-directory: ./packages/console
+        run: git checkout -q ${{ gitea.event.pull_request.head.ref }}
       - 
         name: Module Validation
         working-directory: ./packages/console
