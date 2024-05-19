@@ -22,7 +22,7 @@ declare class Console {
       trace?: boolean;
       debug?: boolean;
       index?: number;
-    },
+    }
   );
   announce(...data: any[]): void;
   assert(condition?: boolean, ...data: any[]): void;
@@ -32,11 +32,11 @@ declare class Console {
   println(): void;
   print(...data: any[]): void;
   debug(...data: any[]): void;
-  dir(item?: any, format?: any): void;
-  dirxml(...data: any[]): void;
+  dir(object?: any, format?: any): void;
+  dirxml(object?: any): void;
   error(...data: any[]): void;
-  group(label?: string, ...data: any[]): void;
-  groupCollapsed(label?: string): void;
+  group(...data: any[]): void;
+  groupCollapsed(): void;
   groupEnd(): void;
   info(...data: any[]): void;
   log(...data: any[]): void;

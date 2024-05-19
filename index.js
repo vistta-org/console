@@ -94,12 +94,12 @@ class Console {
     this.#apply({ type: "debug", data, date: date().toString() });
   }
 
-  dir(item) {
-    this.#apply({ type: "dir", data: [item] });
+  dir(object) {
+    this.#apply({ type: "dir", data: [object] });
   }
 
-  dirxml(...data) {
-    this.#apply({ type: "dirxml", data });
+  dirxml(object) {
+    this.#apply({ type: "dirxml", data: [object] });
   }
 
   error(...data) {
@@ -116,7 +116,7 @@ class Console {
     this.#groups++;
   }
 
-  groupCollapsed() {}
+  groupCollapsed() { }
 
   groupEnd() {
     if (this.#groups > 0) this.#groups--;
@@ -156,16 +156,16 @@ class Console {
       type: "log",
       data: [
         properties +
-          "\n" +
-          data
-            .map((obj, index) =>
-              !isObject
-                ? index + "\t" + obj
-                : headers
-                    .map((key) => (key === "(index)" ? index : obj[key]))
-                    .join("\t"),
-            )
-            .join("\n"),
+        "\n" +
+        data
+          .map((obj, index) =>
+            !isObject
+              ? index + "\t" + obj
+              : headers
+                .map((key) => (key === "(index)" ? index : obj[key]))
+                .join("\t"),
+          )
+          .join("\n"),
       ],
     });
   }
