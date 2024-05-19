@@ -23,7 +23,9 @@ jobs:
         run: npm ci
       - 
         name: Setup Node
-        run: cd ./packages/console
+        run: |
+          working-directory ./packages/console
+          cwd ./packages/console
       - 
         name: Setup Node
         run: ls
