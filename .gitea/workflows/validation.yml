@@ -17,9 +17,10 @@ jobs:
           repository: vistta/vistta
           ref: ${{ gitea.event.pull_request.head.ref }}
           token: ${{ secrets.GIT_TOKEN }}
+          submodules: true
       - 
         name: Checkout Modules
-        run: git submodule update --init --remote
+        run: git submodule update --remote
       - 
         name: Setup Node
         run: npm ci
