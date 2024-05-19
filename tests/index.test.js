@@ -2,7 +2,7 @@ import { Console } from "../index.js";
 import { describe, it } from "node:test";
 import assert from "node:assert";
 
-describe("Console", () => {
+describe("Console #", () => {
   let debug;
   it("Constructor", () => {
     debug = new Console("debug");
