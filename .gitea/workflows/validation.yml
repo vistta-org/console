@@ -27,6 +27,7 @@ jobs:
         run: |
           git fetch
           git checkout
+          ls
       - 
         name: Module Validation
         working-directory: ./packages/console
