@@ -11,8 +11,7 @@
   },
   "scripts": {
     "setup": "",
-    "setup:test": "",
-    "test": "node -v"
+    "test": "ls"
   },
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
