@@ -24,7 +24,7 @@ jobs:
       - 
         name: Pull Package
         working-directory: ./packages/console
-        run: git checkout -q
+        run: git checkout
       - 
         name: Module Validation
         working-directory: ./packages/console
