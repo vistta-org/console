@@ -32,7 +32,7 @@ jobs:
       - 
         name: Typescript Validation
         working-directory: ./packages/console
-        run: npx tsc eslint .
+        run: npx tsc
 #      - 
 #        name: Unit Tests
 #        run: |
