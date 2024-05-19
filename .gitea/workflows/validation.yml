@@ -22,12 +22,17 @@ jobs:
         name: Setup Node
         run: npm ci
       - 
-        name: Pull Package
+        name: Pull Package 1
+        working-directory: ./packages/console
+        run: |
+          git log
+      - 
+        name: Pull Package 2
         working-directory: ./packages/console
         run: |
           git fetch
           git checkout
-          ls
+          git log
       - 
         name: Module Validation
         working-directory: ./packages/console
