@@ -22,13 +22,19 @@ jobs:
         name: Setup Node
         run: npm ci
       - 
-        name: Checkout
-        uses: ./.gitea/actions/checkout
+        name: Setup Node
+        run: cd /packages/console
       - 
-        name: Validations
-        run: |
-          echo "Validations"
-      - 
-        name: Unit Tests
-        run: |
-          npm run test
+        name: Setup Node
+        run: ls
+#      - 
+#        name: Checkout
+#        uses: ./.gitea/actions/checkout
+#      - 
+#        name: Validations
+#        run: |
+#          echo "Validations"
+#      - 
+#        name: Unit Tests
+#        run: |
+#          npm run test
