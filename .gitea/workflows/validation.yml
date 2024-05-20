@@ -5,7 +5,7 @@ on:
     branches:    
       - master
 jobs:
-  Preparation:
+  Setup:
     runs-on: ubuntu-latest
     container:
       image: node:22
@@ -19,6 +19,6 @@ jobs:
           fetch-depth: 0
           submodules: true
   Validation:
-    uses: ./.gitea/workflows/validation.yml@master
+    uses: ./.gitea/workflows/validation.yml
     with:
       module: console
