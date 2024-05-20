@@ -11,19 +11,15 @@ jobs:
       image: node:22
     if: ${{ startsWith(gitea.event.pull_request.labels[0].name, 'Project/Release') && gitea.event.pull_request.milestone == null }}
     steps:
-      - 
-        name: "Checkout"
+      -
+        name: Checkout
         uses: actions/checkout@v4
         with:
+          repository: vistta/vistta
           ref: ${{ gitea.event.pull_request.head.ref }}
-      - 
-        name: "Setup Actions"
-        uses: actions/checkout@v4
-        with:
-          repository: vistta/actions
-          ref: master
           token: ${{ secrets.GIT_TOKEN }}
-          path: "./.gitea/actions"
+          fetch-depth: 0
+          submodules: true
       - 
         name: "Start Release"
         uses: ./.gitea/actions/start-release

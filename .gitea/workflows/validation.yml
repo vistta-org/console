@@ -4,6 +4,8 @@ on:
     types: [synchronize]
     branches:    
       - master
+env:
+  module: console
 jobs:
   Validation:
     runs-on: ubuntu-latest
@@ -27,23 +29,23 @@ jobs:
         run: npm ci
       - 
         name: Module Validation
-        working-directory: ./packages/console
+        working-directory: ./packages/$module
         run: npx vistta outdated
       - 
         name: Eslint Validation
-        working-directory: ./packages/console
+        working-directory: ./packages/$module
         run: npx eslint .
       - 
         name: Typescript Validation
-        working-directory: ./packages/console
+        working-directory: ./packages/$module
         run: npx tsc
       - 
         name: Unit Tests
-        working-directory: ./packages/console
+        working-directory: ./packages/$module
         run: npx vistta test
       - 
         name: Close Issue
         uses: ./.gitea/actions/close-issue
         with:
-          directory: ./packages/console
+          directory: ./packages/$module
           token: ${{ secrets.GIT_TOKEN }}
