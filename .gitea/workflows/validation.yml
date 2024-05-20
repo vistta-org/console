@@ -9,3 +9,5 @@ jobs:
     uses: vistta/vistta/.gitea/workflows/validation.yml@development
     with:
       module: console
+    secrets:
+      token: ${{ secrets.GIT_TOKEN }}
