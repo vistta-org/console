@@ -18,6 +18,7 @@ jobs:
           token: ${{ secrets.GIT_TOKEN }}
           fetch-depth: 0
           submodules: true
+          
   Validation:
     uses: ./.gitea/workflows/validation.yml
     with:
