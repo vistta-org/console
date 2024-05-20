@@ -4,6 +4,8 @@ on:
     types: [labeled]
     branches:    
       - master
+env:
+  module: console
 jobs:
   Release:
     runs-on: ubuntu-latest
@@ -21,6 +23,9 @@ jobs:
           fetch-depth: 0
           submodules: true
       - 
+        name: Checkout Modules
+        run: git submodule update --remote
+      - 
         name: Setup Node
         run: npm ci
       - 
@@ -28,4 +33,5 @@ jobs:
         uses: ./.gitea/actions/start-release
         with:
           type: '${{ gitea.event.pull_request.labels[0].name }}'
+          working-directory: ./packages/${{ env.module }}
           token: ${{ secrets.GIT_TOKEN }}
