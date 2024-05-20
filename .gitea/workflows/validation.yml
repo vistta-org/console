@@ -46,3 +46,4 @@ jobs:
         uses: ./.gitea/actions/close-issue
         with:
           directory: ./packages/console
+          token: ${{ secrets.GIT_TOKEN }}
