@@ -3,15 +3,13 @@
   "version": "0.1.0",
   "description": "Vistta Console Wrapper",
   "main": "index.js",
-  "types": "index.d.ts",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://git.vistta.org/vistta/console.git"
   },
   "scripts": {
-    "postinstall": "",
-    "test": "ls"
+    "postinstall": ""
   },
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
