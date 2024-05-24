@@ -1,140 +1,133 @@
-import { Console } from "../index.js";
-import { describe, it } from "node:test";
-import assert from "node:assert";
+import "../index.js";
 
-describe("Console #", () => {
-  let debug;
+describe("Console", () => {
+  let _console;
   it("Constructor", () => {
-    debug = new Console("debug");
-    assert.ok(!!debug);
-    assert.equal(Console, debug.Console);
+    _console = new console.Console("_console");
+    assert.ok(!!_console);
+    assert.equal(console.constructor, _console.Console);
   });
 
   it("Static", () => {
-    assert.equal(typeof Console.reset, "string");
-    assert.equal(typeof Console.bright, "string");
-    assert.equal(typeof Console.dim, "string");
-    assert.equal(typeof Console.underscore, "string");
-    assert.equal(typeof Console.blink, "string");
-    assert.equal(typeof Console.reverse, "string");
-    assert.equal(typeof Console.black, "string");
-    assert.equal(typeof Console.red, "string");
-    assert.equal(typeof Console.green, "string");
-    assert.equal(typeof Console.yellow, "string");
-    assert.equal(typeof Console.blue, "string");
-    assert.equal(typeof Console.magenta, "string");
-    assert.equal(typeof Console.cyan, "string");
-    assert.equal(typeof Console.white, "string");
+    assert.equal(typeof _console.reset, "string");
+    assert.equal(typeof _console.bright, "string");
+    assert.equal(typeof _console.dim, "string");
+    assert.equal(typeof _console.underscore, "string");
+    assert.equal(typeof _console.blink, "string");
+    assert.equal(typeof _console.reverse, "string");
+    assert.equal(typeof _console.black, "string");
+    assert.equal(typeof _console.red, "string");
+    assert.equal(typeof _console.green, "string");
+    assert.equal(typeof _console.yellow, "string");
+    assert.equal(typeof _console.blue, "string");
+    assert.equal(typeof _console.magenta, "string");
+    assert.equal(typeof _console.cyan, "string");
+    assert.equal(typeof _console.white, "string");
   });
 
   it("Announce", () => {
-    debug.announce("test");
-    assert.equal(typeof debug.announce, "function");
+    _console.announce("test");
+    assert.equal(typeof _console.announce, "function");
   });
 
   it("Assert", () => {
-    debug.assert(typeof debug.assert, "function");
-    assert.equal(typeof debug.assert, "function");
+    _console.assert(typeof _console.assert, "function");
+    assert.equal(typeof _console.assert, "function");
   });
 
   it("Clear", () => {
-    debug.clear();
-    assert.equal(typeof debug.clear, "function");
+    _console.clear();
+    assert.equal(typeof _console.clear, "function");
   });
 
   it("Count", () => {
-    debug.count("test");
-    debug.countReset("test");
-    assert.equal(typeof debug.count, "function");
-    assert.equal(typeof debug.countReset, "function");
+    _console.count("test");
+    _console.countReset("test");
+    assert.equal(typeof _console.count, "function");
+    assert.equal(typeof _console.countReset, "function");
   });
 
   it("Println", () => {
-    debug.println();
-    assert.equal(typeof debug.println, "function");
+    _console.println();
+    assert.equal(typeof _console.println, "function");
   });
 
   it("Print", () => {
-    debug.print("test");
-    assert.equal(typeof debug.print, "function");
+    _console.print("test");
+    assert.equal(typeof _console.print, "function");
   });
 
   it("Debug", () => {
-    debug.debug("test");
-    assert.equal(typeof debug.debug, "function");
+    _console.debug("test");
+    assert.equal(typeof _console.debug, "function");
   });
 
   it("Dir", () => {
-    debug.dir({ 1: "test" });
-    debug.dirxml({ 1: "test" });
-    assert.equal(typeof debug.dir, "function");
-    assert.equal(typeof debug.dirxml, "function");
-  });
-
-  it("Debug", () => {
-    debug.debug("test");
-    assert.equal(typeof debug.debug, "function");
+    _console.dir({ 1: "test" });
+    _console.dirxml({ 1: "test" });
+    assert.equal(typeof _console.dir, "function");
+    assert.equal(typeof _console.dirxml, "function");
   });
 
   it("Error", () => {
-    debug.error("test");
-    assert.equal(typeof debug.error, "function");
+    _console.error("test");
+    assert.equal(typeof _console.error, "function");
   });
 
   it("Group", () => {
-    debug.group();
-    debug.groupCollapsed();
-    debug.groupEnd();
-    assert.equal(typeof debug.group, "function");
-    assert.equal(typeof debug.groupCollapsed, "function");
-    assert.equal(typeof debug.groupEnd, "function");
+    _console.group();
+    _console.groupCollapsed();
+    _console.groupEnd();
+    assert.equal(typeof _console.group, "function");
+    assert.equal(typeof _console.groupCollapsed, "function");
+    assert.equal(typeof _console.groupEnd, "function");
   });
 
   it("Info", () => {
-    debug.info("test");
-    assert.equal(typeof debug.info, "function");
+    _console.info("test");
+    assert.equal(typeof _console.info, "function");
   });
 
   it("Log", () => {
-    debug.log("test");
-    assert.equal(typeof debug.log, "function");
+    _console.log("test");
+    assert.equal(typeof _console.log, "function");
   });
 
   it("Success", () => {
-    debug.success("test");
-    assert.equal(typeof debug.success, "function");
+    _console.success("test");
+    assert.equal(typeof _console.success, "function");
   });
 
   it("Table", () => {
-    debug.table(["test"]);
-    assert.equal(typeof debug.table, "function");
+    _console.table(["test"]);
+    assert.equal(typeof _console.table, "function");
   });
 
   it("Time", () => {
-    debug.time("test");
-    debug.timeLog("test");
-    debug.timeStamp("test");
-    debug.timeEnd("test");
-    assert.equal(typeof debug.time, "function");
-    assert.equal(typeof debug.timeLog, "function");
-    assert.equal(typeof debug.timeStamp, "function");
-    assert.equal(typeof debug.timeEnd, "function");
+    _console.time("test");
+    _console.timeLog("test");
+    _console.timeStamp("test");
+    _console.timeEnd("test");
+    assert.equal(typeof _console.time, "function");
+    assert.equal(typeof _console.timeLog, "function");
+    assert.equal(typeof _console.timeStamp, "function");
+    assert.equal(typeof _console.timeEnd, "function");
   });
 
   it("Trace", () => {
-    debug.trace("test");
-    assert.equal(typeof debug.trace, "function");
+    _console.trace("test");
+    assert.equal(typeof _console.trace, "function");
   });
 
   it("Warn", () => {
-    debug.warn("test");
-    assert.equal(typeof debug.warn, "function");
+    _console.warn("test");
+    assert.equal(typeof _console.warn, "function");
   });
 
   it("Profile", () => {
-    debug.profile("test");
-    debug.profileEnd("test", true);
-    assert.equal(typeof debug.profile, "function");
-    assert.equal(typeof debug.profileEnd, "function");
+    _console.profile("test");
+    _console.profileEnd("test", true);
+    assert.equal(typeof _console.profile, "function");
+    assert.equal(typeof _console.profileEnd, "function");
   });
 });

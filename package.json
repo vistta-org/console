@@ -1,7 +1,7 @@
 {
   "name": "@vistta/console",
   "version": "0.1.0",
-  "description": "Vistta Console Wrapper",
+  "description": "Vistta Console Library",
   "main": "index.js",
   "type": "module",
   "repository": {

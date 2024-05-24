@@ -14,72 +14,101 @@ class Console {
   /**
    * Resets the console colors.
    */
-  static reset = typeof process === "undefined" ? "" : "\x1b[0m";
+  get reset() {
+    return typeof process === "undefined" ? "" : "\x1b[0m";
+  }
 
   /**
    * Makes text bright.
    */
-  static bright = typeof process === "undefined" ? "" : "\x1b[1m";
+  get bright() {
+    return typeof process === "undefined" ? "" : "\x1b[1m";
+  }
 
   /**
    * Makes text dim.
    */
-  static dim = typeof process === "undefined" ? "" : "\x1b[2m";
+  get dim() {
+    return typeof process === "undefined" ? "" : "\x1b[2m";
+  }
 
   /**
    * Underlines text.
    */
-  static underscore = typeof process === "undefined" ? "" : "\x1b[4m";
+  get underscore() {
+    return typeof process === "undefined" ? "" : "\x1b[4m";
+  }
 
   /**
    * Blinks text.
    */
-  static blink = typeof process === "undefined" ? "" : "\x1b[5m";
+  get blink() {
+    return typeof process === "undefined" ? "" : "\x1b[5m";
+  }
 
   /**
    * Reverses text color.
    */
-  static reverse = typeof process === "undefined" ? "" : "\x1b[7m";
+  get reverse() {
+    return typeof process === "undefined" ? "" : "\x1b[7m";
+  }
 
   /**
    * Sets text color to black.
    */
-  static black = typeof process === "undefined" ? "" : "\x1b[30m";
+  get black() {
+    return typeof process === "undefined" ? "" : "\x1b[30m";
+  }
 
   /**
    * Sets text color to red.
    */
-  static red = typeof process === "undefined" ? "" : "\x1b[31m";
+  get red() {
+    return typeof process === "undefined" ? "" : "\x1b[31m";
+  }
 
   /**
    * Sets text color to green.
    */
-  static green = typeof process === "undefined" ? "" : "\x1b[32m";
+  get green() {
+    return typeof process === "undefined" ? "" : "\x1b[32m";
+  }
 
   /**
    * Sets text color to yellow.
    */
-  static yellow = typeof process === "undefined" ? "" : "\x1b[33m";
+  get yellow() {
+    return typeof process === "undefined" ? "" : "\x1b[33m";
+  }
 
   /**
    * Sets text color to blue.
    */
-  static blue = typeof process === "undefined" ? "" : "\x1b[34m";
+  get blue() {
+    return typeof process === "undefined" ? "" : "\x1b[34m";
+  }
 
   /**
    * Sets text color to magenta.
    */
-  static magenta = typeof process === "undefined" ? "" : "\x1b[35m";
+  get magenta() {
+    return typeof process === "undefined" ? "" : "\x1b[35m";
+  }
 
   /**
    * Sets text color to cyan.
    */
-  static cyan = typeof process === "undefined" ? "" : "\x1b[36m";
+  get cyan() {
+    return typeof process === "undefined" ? "" : "\x1b[36m";
+  }
 
   /**
    * Sets text color to white.
    */
-  static white = typeof process === "undefined" ? "" : "\x1b[37m";
+  get white() {
+    return typeof process === "undefined" ? "" : "\x1b[37m";
+  }
+
   #id = "";
   #timers = {};
   #counts = {};
@@ -105,6 +134,14 @@ class Console {
     if (typeof id !== "string") throw new Error("Error console needs an id");
     if (ids.indexOf(id) != -1)
       throw new Error("Error console id needs to be unique.");
+    const prototype = Object.getPrototypeOf(this);
+    const functions = Object.getOwnPropertyNames(prototype);
+    for (let i = 0, len = functions.length; i < len; i++) {
+      if (functions[i] === "constructor") continue;
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, functions[i]);
+      if (typeof descriptor.get === 'undefined' && typeof descriptor.set === 'undefined')
+        this[functions[i]] = this[functions[i]].bind(this);
+    }
     ids.push(((this.#id = id), id));
     this.#date = date !== false;
     this.#debug = process.stdout.isTTY
@@ -123,7 +160,7 @@ class Console {
    * @param {...any} data - The message to announce.
    */
   announce(...data) {
-    this.#apply({ type: "announce", data, color: Console.bright });
+    this.#apply({ type: "announce", data, color: this.bright });
   }
 
   /**
@@ -134,8 +171,8 @@ class Console {
    */
   assert(condition, ...data) {
     if (condition)
-      data.unshift(`${Console.green}Assertion passed${Console.reset}`);
-    else data.unshift(`${Console.red}Assertion failed${Console.reset}`);
+      data.unshift(`${this.green}Assertion passed${this.reset}`);
+    else data.unshift(`${this.red}Assertion failed${this.reset}`);
     this.#apply({ type: "assert", data });
   }
 
@@ -230,7 +267,7 @@ class Console {
     this.#apply({
       type: "error",
       data,
-      color: Console.red,
+      color: this.red,
       date: date().toString(),
     });
   }
@@ -271,7 +308,7 @@ class Console {
     this.#apply({
       type: "info",
       data,
-      color: Console.cyan,
+      color: this.cyan,
       date: date().toString(),
     });
   }
@@ -318,7 +355,7 @@ class Console {
     this.#apply({
       type: "success",
       data,
-      color: Console.green,
+      color: this.green,
       date: date().toString(),
     });
   }
@@ -388,7 +425,7 @@ class Console {
   timeLog(key, ...data) {
     if (!this.#timers[key]) return;
     data.push(
-      `${Console.reset + Console.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
+      `${this.reset + this.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
     );
     this.#apply({ type: "timeLog", data, date: date().toString() });
   }
@@ -403,7 +440,7 @@ class Console {
     this.#apply({
       type: "warn",
       data: [
-        `${key} ${Console.reset + Console.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
+        `${key} ${this.reset + this.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
       ],
       date: date().toString(),
     });
@@ -427,7 +464,7 @@ class Console {
     this.#apply({
       type: "warn",
       data,
-      color: Console.yellow,
+      color: this.yellow,
       date: date().toString(),
     });
   }
@@ -447,7 +484,7 @@ class Console {
     const log = { id: this.#id, type, date, message: "" };
     let initial = color || "";
     if (this.#date && date)
-      initial = `${Console.dim}[${date}]${color || Console.reset} `;
+      initial = `${this.dim}[${date}]${color || this.reset} `;
     log.message += "\t".repeat(this.#groups);
     log.message += data.reduce((message, value, index) => {
       const spacer = index === 0 ? "" : " ";
@@ -471,7 +508,7 @@ class Console {
     }, initial);
     if (trace || this.#trace)
       log.message += "\n" + new Error().stack.split("\n").slice(2).join("\n");
-    log.message += Console.reset;
+    log.message += this.reset;
     if (this.#debug) {
       write(log.message);
       logs.push(log);
@@ -494,5 +531,5 @@ class Console {
   }
 }
 
-export default Console;
-export { Console };
+// @ts-ignore
+global.console = new Console("");
