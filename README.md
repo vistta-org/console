@@ -46,7 +46,19 @@ console.log("Index 0");
 
 ## **API**
 
-API
+Features
+
+### **Properties**
+
+The following properties are available:
+
+-
+
+### **Instance Methods**
+
+The following methods are available:
+
+-
 
 ## **License**
 
