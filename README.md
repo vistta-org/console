@@ -13,9 +13,8 @@ npm install @vistta/console
 ### **Usage**
 
 ```javascript
-import { Console } from "./@vistta/console.js";
+import "@vistta/console.js";
 
-console = new Console();
 // Log a message
 console.log("Hello, world!");
 
@@ -38,6 +37,11 @@ console.groupEnd();
 console.time("function_name");
 // Function code here
 console.timeEnd("function_name");
+
+// Time a function
+const newConsole = new console.Console({ index: 1 });
+newConsole.log("Index 1");
+console.log("Index 0");
 ```
 
 ## **API**
