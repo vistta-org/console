@@ -1,24 +1,114 @@
+// @ts-check
 import { date } from "@vistta/date-time";
 const write = console.log.bind(console);
 const clear = console.clear.bind(console);
 const logs = [];
 const ids = [];
 
+/**
+ * A class for creating and managing console logs.
+ *
+ * @class Console
+ */
 class Console {
-  static reset = typeof process === "undefined" ? "" : "\x1b[0m";
-  static bright = typeof process === "undefined" ? "" : "\x1b[1m";
-  static dim = typeof process === "undefined" ? "" : "\x1b[2m";
-  static underscore = typeof process === "undefined" ? "" : "\x1b[4m";
-  static blink = typeof process === "undefined" ? "" : "\x1b[5m";
-  static reverse = typeof process === "undefined" ? "" : "\x1b[7m";
-  static black = typeof process === "undefined" ? "" : "\x1b[30m";
-  static red = typeof process === "undefined" ? "" : "\x1b[31m";
-  static green = typeof process === "undefined" ? "" : "\x1b[32m";
-  static yellow = typeof process === "undefined" ? "" : "\x1b[33m";
-  static blue = typeof process === "undefined" ? "" : "\x1b[34m";
-  static magenta = typeof process === "undefined" ? "" : "\x1b[35m";
-  static cyan = typeof process === "undefined" ? "" : "\x1b[36m";
-  static white = typeof process === "undefined" ? "" : "\x1b[37m";
+  /**
+   * Resets the console colors.
+   */
+  get reset() {
+    return typeof process === "undefined" ? "" : "\x1b[0m";
+  }
+
+  /**
+   * Makes text bright.
+   */
+  get bright() {
+    return typeof process === "undefined" ? "" : "\x1b[1m";
+  }
+
+  /**
+   * Makes text dim.
+   */
+  get dim() {
+    return typeof process === "undefined" ? "" : "\x1b[2m";
+  }
+
+  /**
+   * Underlines text.
+   */
+  get underscore() {
+    return typeof process === "undefined" ? "" : "\x1b[4m";
+  }
+
+  /**
+   * Blinks text.
+   */
+  get blink() {
+    return typeof process === "undefined" ? "" : "\x1b[5m";
+  }
+
+  /**
+   * Reverses text color.
+   */
+  get reverse() {
+    return typeof process === "undefined" ? "" : "\x1b[7m";
+  }
+
+  /**
+   * Sets text color to black.
+   */
+  get black() {
+    return typeof process === "undefined" ? "" : "\x1b[30m";
+  }
+
+  /**
+   * Sets text color to red.
+   */
+  get red() {
+    return typeof process === "undefined" ? "" : "\x1b[31m";
+  }
+
+  /**
+   * Sets text color to green.
+   */
+  get green() {
+    return typeof process === "undefined" ? "" : "\x1b[32m";
+  }
+
+  /**
+   * Sets text color to yellow.
+   */
+  get yellow() {
+    return typeof process === "undefined" ? "" : "\x1b[33m";
+  }
+
+  /**
+   * Sets text color to blue.
+   */
+  get blue() {
+    return typeof process === "undefined" ? "" : "\x1b[34m";
+  }
+
+  /**
+   * Sets text color to magenta.
+   */
+  get magenta() {
+    return typeof process === "undefined" ? "" : "\x1b[35m";
+  }
+
+  /**
+   * Sets text color to cyan.
+   */
+  get cyan() {
+    return typeof process === "undefined" ? "" : "\x1b[36m";
+  }
+
+  /**
+   * Sets text color to white.
+   */
+  get white() {
+    return typeof process === "undefined" ? "" : "\x1b[37m";
+  }
+
   #id = "";
   #timers = {};
   #counts = {};
@@ -29,10 +119,29 @@ class Console {
   #trace;
 
   Console = Console;
+
+  /**
+   * Creates a new Console instance.
+   *
+   * @param {string} id - The unique identifier for the console.
+   * @param {Object} [options] - Optional configuration options.
+   * @param {boolean} [options.date] - Whether to include the date in logs. Defaults to true.
+   * @param {boolean} [options.trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
+   * @param {boolean} [options.debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
+   * @param {number} [options.index] - The index of the console. Defaults to 0.
+   */
   constructor(id, { date, trace, debug, index = 0 } = {}) {
     if (typeof id !== "string") throw new Error("Error console needs an id");
     if (ids.indexOf(id) != -1)
       throw new Error("Error console id needs to be unique.");
+    const prototype = Object.getPrototypeOf(this);
+    const functions = Object.getOwnPropertyNames(prototype);
+    for (let i = 0, len = functions.length; i < len; i++) {
+      if (functions[i] === "constructor") continue;
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, functions[i]);
+      if (typeof descriptor.get === 'undefined' && typeof descriptor.set === 'undefined')
+        this[functions[i]] = this[functions[i]].bind(this);
+    }
     ids.push(((this.#id = id), id));
     this.#date = date !== false;
     this.#debug = process.stdout.isTTY
@@ -45,17 +154,31 @@ class Console {
     clear();
   }
 
+  /**
+   * Announces a message.
+   *
+   * @param {...any} data - The message to announce.
+   */
   announce(...data) {
-    this.#apply({ type: "announce", data, color: Console.bright });
+    this.#apply({ type: "announce", data, color: this.bright });
   }
 
+  /**
+   * Asserts a condition.
+   *
+   * @param {boolean} condition - The condition to assert.
+   * @param {...any} data - The message to log if the condition fails.
+   */
   assert(condition, ...data) {
     if (condition)
-      data.unshift(`${Console.green}Assertion passed${Console.reset}`);
-    else data.unshift(`${Console.red}Assertion failed${Console.reset}`);
+      data.unshift(`${this.green}Assertion passed${this.reset}`);
+    else data.unshift(`${this.red}Assertion failed${this.reset}`);
     this.#apply({ type: "assert", data });
   }
 
+  /**
+   * Clears the console.
+   */
   clear() {
     if (this.#debug) return;
     clear();
@@ -69,6 +192,11 @@ class Console {
     }
   }
 
+  /**
+   * Increments a counter for the given key.
+   *
+   * @param {string} [key] - The key of the counter.
+   */
   count(key = "") {
     if (!this.#counts[key]) this.#counts[key] = 0;
     this.#apply({
@@ -78,72 +206,166 @@ class Console {
     });
   }
 
+  /**
+   * Resets the counter for the given key.
+   *
+   * @param {string} [key] - The key of the counter.
+   */
   countReset(key = "") {
     this.#counts[key] = 0;
   }
 
+  /**
+   * Logs a message.
+   *
+   * @param {...any} data - The message to log.
+   */
   print(...data) {
     this.#apply({ type: "debug", data });
   }
 
+  /**
+   * Logs a new line.
+   */
   println() {
     this.#apply({ type: "debug", data: [""] });
   }
 
+  /**
+   * Logs a debug message.
+   *
+   * @param {...any} data - The message to log.
+   */
   debug(...data) {
     this.#apply({ type: "debug", data, date: date().toString() });
   }
 
-  dir(item) {
-    this.#apply({ type: "dir", data: [item] });
+  /**
+   * Logs an object.
+   *
+   * @param {Object} object - The object to log.
+   */
+  dir(object) {
+    this.#apply({ type: "dir", data: [object] });
   }
 
-  dirxml(...data) {
-    this.#apply({ type: "dirxml", data });
+  /**
+   * Logs an XML object.
+   *
+   * @param {Object} object - The XML object to log.
+   */
+  dirxml(object) {
+    this.#apply({ type: "dirxml", data: [object] });
   }
 
+  /**
+   * Logs an error message.
+   *
+   * @param {...any} data - The error message.
+   */
   error(...data) {
     this.#apply({
       type: "error",
       data,
-      color: Console.red,
+      color: this.red,
       date: date().toString(),
     });
   }
 
+  /**
+   * Starts a new group of logs.
+   *
+   * @param {...any} data - The message to log for the group header.
+   */
   group(...data) {
     if (data.length) this.#apply({ type: "log", data });
     this.#groups++;
   }
 
-  groupCollapsed() {}
+  /**
+   * Starts a new group of logs.
+   *
+   * @param {...any} data - The message to log for the group header.
+   */
+  groupCollapsed(...data) {
+    if (data.length) this.#apply({ type: "log", data });
+    this.#groups++;
+  }
 
+  /**
+   * Ends a group of logs.
+   */
   groupEnd() {
     if (this.#groups > 0) this.#groups--;
   }
 
+  /**
+   * Logs an information message.
+   *
+   * @param {...any} data - The message to log.
+   */
   info(...data) {
     this.#apply({
       type: "info",
       data,
-      color: Console.cyan,
+      color: this.cyan,
       date: date().toString(),
     });
   }
 
+  /**
+   * Logs a message.
+   *
+   * @param {...any} data - The success message.
+   */
   log(...data) {
     this.#apply({ type: "log", data, date: date().toString() });
   }
 
+  /**
+   * Starts a profile measurement.
+   *
+   * @param {string} key - The key of the profile measurement.
+   * @param {boolean} [force] - Overwrites existing keys.
+   */
+  profile(key, force) {
+    if (!force && this.#timers[key])
+      return console.warn(`${key} already exists.`);
+    this.#timers[key] = date();
+  }
+
+  /**
+   * Ends a profile measurement.
+   *
+   * @param {string} key - The key of the profile measurement.
+   * @param {boolean} [print] - Whether to print the time difference. Defaults to true.
+   */
+  profileEnd(key, print = true) {
+    if (!this.#timers[key]) return;
+    if (print) this.timeStamp(key);
+    delete this.#timers[key];
+  }
+
+  /**
+   * Logs a success message.
+   *
+   * @param {...any} data - The success message.
+   */
   success(...data) {
     this.#apply({
       type: "success",
       data,
-      color: Console.green,
+      color: this.green,
       date: date().toString(),
     });
   }
 
+  /**
+   * Logs a table.
+   *
+   * @param {Array<any>} data - The data to log as a table.
+   * @param {string} properties - The properties to include in the table header.
+   */
   table(data, properties) {
     if (!Array.isArray(data) || data.length === 0) return;
     const isObject = typeof data[0] === "object";
@@ -156,84 +378,113 @@ class Console {
       type: "log",
       data: [
         properties +
-          "\n" +
-          data
-            .map((obj, index) =>
-              !isObject
-                ? index + "\t" + obj
-                : headers
-                    .map((key) => (key === "(index)" ? index : obj[key]))
-                    .join("\t"),
-            )
-            .join("\n"),
+        "\n" +
+        data
+          .map((obj, index) =>
+            !isObject
+              ? index + "\t" + obj
+              : headers
+                .map((key) => (key === "(index)" ? index : obj[key]))
+                .join("\t"),
+          )
+          .join("\n"),
       ],
     });
   }
 
+  /**
+   * Logs a time measurement start.
+   *
+   * @param {string} key - The key of the time measurement.
+   * @param {boolean} [force] - Overwrites existing keys.
+   */
   time(key, force = false) {
     if (!force && this.#timers[key])
       return console.warn(`${key} already exists.`);
     this.#timers[key] = date();
   }
 
+  /**
+   * Logs a time measurement end.
+   *
+   * @param {string} key - The key of the time measurement.
+   * @param {boolean} print - Whether to print the time difference. Defaults to true.
+   */
   timeEnd(key, print = true) {
     if (!this.#timers[key]) return;
     if (print) this.timeStamp(key);
     delete this.#timers[key];
   }
 
+  /**
+   * Logs a time measurement log.
+   *
+   * @param {string} key - The key of the time measurement.
+   * @param {...any} data - The message to log.
+   */
   timeLog(key, ...data) {
     if (!this.#timers[key]) return;
     data.push(
-      `${Console.reset + Console.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
+      `${this.reset + this.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
     );
     this.#apply({ type: "timeLog", data, date: date().toString() });
   }
 
+  /**
+   * Logs a timestamp.
+   *
+   * @param {string} key - The key of the time measurement.
+   */
   timeStamp(key) {
     if (!this.#timers[key]) return;
     this.#apply({
       type: "warn",
       data: [
-        `${key} ${Console.reset + Console.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
+        `${key} ${this.reset + this.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
       ],
-      date: date().toString(true),
-    });
-  }
-
-  trace(...data) {
-    this.#apply({ type: "trace", data, date: date().toString(), trace: true });
-  }
-
-  warn(...data) {
-    this.#apply({
-      type: "warn",
-      data,
-      color: Console.yellow,
       date: date().toString(),
     });
   }
 
-  profile(key, force = false) {
-    if (!force && this.#timers[key])
-      return console.warn(`${key} already exists.`);
-    this.#timers[key] = date();
+  /**
+   * Logs a trace message.
+   *
+   * @param {...any} data - The message to log.
+   */
+  trace(...data) {
+    this.#apply({ type: "trace", data, date: date().toString(), trace: true });
   }
 
-  profileEnd(key, print = true) {
-    if (!this.#timers[key]) return;
-    if (print) this.timeStamp(key);
-    delete this.#timers[key];
+  /**
+   * Logs a warning message.
+   *
+   * @param {...any} data - The warning message.
+   */
+  warn(...data) {
+    this.#apply({
+      type: "warn",
+      data,
+      color: this.yellow,
+      date: date().toString(),
+    });
   }
 
   //
 
+  /**
+   * @param {Object} options
+   * @param {string} options.type
+   * @param {any[]} options.data
+   * @param {string} [options.color]
+   * @param {string} [options.date] 
+   * @param {boolean} [options.trace]
+   */
   #apply({ type, data, color, date, trace }) {
     if (!(data?.length > 0)) return;
     const log = { id: this.#id, type, date, message: "" };
     let initial = color || "";
     if (this.#date && date)
-      initial = `${Console.dim}[${date}]${color || Console.reset} `;
+      initial = `${this.dim}[${date}]${color || this.reset} `;
     log.message += "\t".repeat(this.#groups);
     log.message += data.reduce((message, value, index) => {
       const spacer = index === 0 ? "" : " ";
@@ -257,7 +508,7 @@ class Console {
     }, initial);
     if (trace || this.#trace)
       log.message += "\n" + new Error().stack.split("\n").slice(2).join("\n");
-    log.message += Console.reset;
+    log.message += this.reset;
     if (this.#debug) {
       write(log.message);
       logs.push(log);
@@ -280,5 +531,5 @@ class Console {
   }
 }
 
-export default Console;
-export { Console };
+// @ts-ignore
+global.console = new Console("");
