@@ -512,7 +512,7 @@ class Console {
       return message + spacer + `${value}`;
     }, initial);
     if (trace || this.#trace)
-      log.message += "\n" + new Error().stack.split("\n").slice(2).join("\n");
+      log.message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
     log.message += this.reset;
     if (this.#debug) {
       write(log.message);
