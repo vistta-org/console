@@ -48,35 +48,82 @@ console.log("Index 0");
 
 ```typescript
 class Console {
-  readonly reset: string; // Resets the console colors.
+  /**
+   * @returns {string} Code to reset the console color.
+   */
+  get reset();
 
-  readonly bright: string; // Makes text bright.
+  /**
+   * @returns {string} Code to make the text bright.
+   */
+  get bright();
 
-  readonly dim: string; //Makes text dim.
+  /**
+   * @returns {string} Code to make the text dim.
+   */
+  get dim();
 
-  readonly underscore: string; // Underlines text.
+  /**
+   * @returns {string} Code to underline the text.
+   */
+  get underscore() {
+    return typeof process === "undefined" ? "" : "\x1b[4m";
+  }
 
-  readonly blink: string; // Blinks text.
+  /**
+   * @returns {string} Code to blink the text.
+   */
+  get blink();
 
-  readonly reverse: string; // Reverses text color.
+  /**
+   * @returns {string} Code to reverse the text color.
+   */
+  get reverse();
 
-  readonly black: string; // Sets text color to black.
+  /**
+   * @returns {string} Code to set the text color to black.
+   */
+  get black();
 
-  readonly red: string; // Sets text color to red.
+  /**
+   * @returns {string} Code to set the text color to red.
+   */
+  get red();
 
-  readonly green: string; // Sets text color to green.
+  /**
+   * @returns {string} Code to set the text color to green.
+   */
+  get green();
 
-  readonly yellow: string; // Sets text color to yellow.
+  /**
+   * @returns {string} Code to set the text color to yellow.
+   */
+  get yellow();
 
-  readonly blue: string; // Sets text color to blue.
+  /**
+   * @returns {string} Code to set the text color to blue.
+   */
+  get blue();
 
-  readonly magenta: string; // Sets text color to magenta.
+  /**
+   * @returns {string} Code to set the text color to magenta.
+   */
+  get magenta();
 
-  readonly cyan: string; // Sets text color to cyan.
+  /**
+   * @returns {string} Code to set the text color to cyan.
+   */
+  get cyan();
 
-  readonly white: string; // Sets text color to white.
+  /**
+   * @returns {string} Code to set the text color to white.
+   */
+  get white();
 
-  readonly Console: Console;
+  /**
+   * @returns {typeof Console} Console Instance Class.
+   */
+  get Console();
 
   /**
    * Creates a new Console instance.

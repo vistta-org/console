@@ -12,101 +12,108 @@ const ids = [];
  */
 class Console {
   /**
-   * Resets the console colors.
+   * @returns {string} Code to reset the console color.
    */
   get reset() {
     return typeof process === "undefined" ? "" : "\x1b[0m";
   }
 
   /**
-   * Makes text bright.
+   * @returns {string} Code to make the text bright.
    */
   get bright() {
     return typeof process === "undefined" ? "" : "\x1b[1m";
   }
 
   /**
-   * Makes text dim.
+   * @returns {string} Code to make the text dim.
    */
   get dim() {
     return typeof process === "undefined" ? "" : "\x1b[2m";
   }
 
   /**
-   * Underlines text.
+   * @returns {string} Code to underline the text.
    */
   get underscore() {
     return typeof process === "undefined" ? "" : "\x1b[4m";
   }
 
   /**
-   * Blinks text.
+   * @returns {string} Code to blink the text.
    */
   get blink() {
     return typeof process === "undefined" ? "" : "\x1b[5m";
   }
 
   /**
-   * Reverses text color.
+   * @returns {string} Code to reverse the text color.
    */
   get reverse() {
     return typeof process === "undefined" ? "" : "\x1b[7m";
   }
 
   /**
-   * Sets text color to black.
+   * @returns {string} Code to set the text color to black.
    */
   get black() {
     return typeof process === "undefined" ? "" : "\x1b[30m";
   }
 
   /**
-   * Sets text color to red.
+   * @returns {string} Code to set the text color to red.
    */
   get red() {
     return typeof process === "undefined" ? "" : "\x1b[31m";
   }
 
   /**
-   * Sets text color to green.
+   * @returns {string} Code to set the text color to green.
    */
   get green() {
     return typeof process === "undefined" ? "" : "\x1b[32m";
   }
 
   /**
-   * Sets text color to yellow.
+   * @returns {string} Code to set the text color to yellow.
    */
   get yellow() {
     return typeof process === "undefined" ? "" : "\x1b[33m";
   }
 
   /**
-   * Sets text color to blue.
+   * @returns {string} Code to set the text color to blue.
    */
   get blue() {
     return typeof process === "undefined" ? "" : "\x1b[34m";
   }
 
   /**
-   * Sets text color to magenta.
+   * @returns {string} Code to set the text color to magenta.
    */
   get magenta() {
     return typeof process === "undefined" ? "" : "\x1b[35m";
   }
 
   /**
-   * Sets text color to cyan.
+   * @returns {string} Code to set the text color to cyan.
    */
   get cyan() {
     return typeof process === "undefined" ? "" : "\x1b[36m";
   }
 
   /**
-   * Sets text color to white.
+   * @returns {string} Code to set the text color to white.
    */
   get white() {
     return typeof process === "undefined" ? "" : "\x1b[37m";
+  }
+
+  /**
+   * @returns {typeof Console} Console Instance Class.
+   */
+  get Console() {
+    return Console;
   }
 
   #id = "";
@@ -117,8 +124,6 @@ class Console {
   #date;
   #debug;
   #trace;
-
-  Console = Console;
 
   /**
    * Creates a new Console instance.
@@ -507,7 +512,7 @@ class Console {
       return message + spacer + `${value}`;
     }, initial);
     if (trace || this.#trace)
-      log.message += "\n" + new Error().stack.split("\n").slice(2).join("\n");
+      log.message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
     log.message += this.reset;
     if (this.#debug) {
       write(log.message);
