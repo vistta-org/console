@@ -9,7 +9,6 @@ const _clear = await (async () => {
   return () => execSync("powershell.exe Clear-Host");
 })();
 const clears = [];
-const system = Symbol("system");
 const isTTY = typeof process === "undefined" || process.stdout.isTTY;
 
 /**
@@ -170,21 +169,18 @@ class Console {
   /**
    * Creates a new Console instance.
    * 
-   * @param {Object} [options] - Optional configuration options.
-   * @param {Writable} [options.stdout] - Writable Stream.
-   * @param {Writable} [options.stderr] - Writable Stream.
-   * @param {Function} [options.clear] - Function to clear the Stream if available.
-   * @param {boolean} [options.date] - Whether to include the date in logs. Defaults to true.
-   * @param {boolean} [options.trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
-   * @param {boolean} [options.debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
-   * @param {number} [options.index] - The index of the console. Defaults to 0.
+   * @typedef {Object} Options
+   * @property {Writable} [stdout] - Writable Stream.
+   * @property {Writable} [stderr] - Writable Stream.
+   * @property {Function} [clear] - Function to clear the Stream if available.
+   * @property {boolean} [date] - Whether to include the date in logs. Defaults to true.
+   * @property {boolean} [trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
+   * @property {boolean} [debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
+   * @property {number} [index] - The index of the console. Defaults to 0.
+   * 
+   * @param {Options} [options] - Optional configuration options or true for system default.
    */
-  constructor(options) {
-    // @ts-ignore
-    const isSystem = options === system;
-    // @ts-ignore
-    const { stdout, stderr, clear, date, trace, debug, index = 0, } = (isSystem ? { index: -1337, date: false } : options) || {};
-    if (!isSystem && index < 0) throw new TypeError("The index needs to be a positive number or 0");
+  constructor({ stdout, stderr, clear, date, trace, debug, index } = {}) {
     this.#stdout = stdout || _stdout;
     this.#stderr = stderr || _stderr;
     this.#clear = clear || _clear;
@@ -200,14 +196,14 @@ class Console {
     this.#custom = this.#stdout !== _stdout || this.#stderr !== _stderr;
     this.#debug = debug == null ? process.env.NODE_DEBUG : debug;
     this.#trace = trace == null ? process.env.NODE_TRACE : trace;
-    this.#index = index;
-    let exits = false;
+    this.#index = index == null ? 0 : index;
+    let found = false;
     for (let i = 0, len = clears.length; i < len; i++) {
       if (clears[i] !== this.#clear) continue;
-      exits = true;
+      found = true;
       break;
     }
-    if (!exits) clears.push(this.#clear), this.#clear();
+    if (!found) clears.push(this.#clear), this.#clear();
   }
 
   /**
@@ -565,7 +561,7 @@ class Console {
     if (trace || this.#trace)
       log.message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
     log.message += this.reset;
-    if (this.#debug || !isTTY) return logs.push(write(log, true));
+    if (this.#debug || !isTTY) return logs.push(write(log));
     if (this.#custom) return logs.push(write(log));
     const index = findLogIndex(log);
     if (index == -1) return logs.push(write(log));
@@ -575,20 +571,11 @@ class Console {
   }
 }
 
-// @ts-ignore
-global.console = new Console();
-// @ts-ignore
-global.system = new Console(system);
+export { Console };
 
-function write(log, force) {
-  if (log.type === "error") {
-    if (!force && log.instance.index >= 0 && log.instance.stderr === _stderr && process.env.NODE_CONSOLE === "false") return log;
-    log.instance?.stderr?.write(log.message);
-  }
-  else {
-    if (!force && log.instance.index >= 0 && log.instance.stdout === _stdout && process.env.NODE_CONSOLE === "false") return log;
-    log.instance?.stdout?.write(log.message);
-  }
+function write(log) {
+  if (log.type === "error") log.instance?.stderr?.write(log.message);
+  else log.instance?.stdout?.write(log.message);
   return log;
 }
 
