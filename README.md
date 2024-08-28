@@ -1,4 +1,4 @@
-# **Vistta Console Library**
+# **VISTTA Console Library**
 
 The `Console` object provides a set of methods for logging messages to the console. It allows for different log levels, formatting options, and time tracking.
 
@@ -39,9 +39,9 @@ console.time("function_name");
 console.timeEnd("function_name");
 
 // Time a function
-const newConsole = new console.Console({ index: 1 });
-newConsole.log("Index 1");
-console.log("Index 0");
+const logger = new console.Console({ index: 1 });
+logger.log("Index 1");
+logger.log("Index 0");
 ```
 
 ## **API**
@@ -128,14 +128,16 @@ class Console {
   /**
    * Creates a new Console instance.
    *
-   * @param {string} id - The unique identifier for the console.
    * @param {Object} [options] - Optional configuration options.
+   * @param {Writable} [options.stdout] - Writable Stream.
+   * @param {Writable} [options.stderr] - Writable Stream.
+   * @param {Function} [options.clear] - Function to clear the Stream if available.
    * @param {boolean} [options.date] - Whether to include the date in logs. Defaults to true.
    * @param {boolean} [options.trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
    * @param {boolean} [options.debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
    * @param {number} [options.index] - The index of the console. Defaults to 0.
    */
-  constructor(id, { date, trace, debug, index = 0 } = {});
+  constructor(options);
 
   /**
    * Announces a message.

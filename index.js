@@ -1,9 +1,15 @@
 // @ts-check
 import { date } from "@vistta/date-time";
-const write = console.log.bind(console);
-const clear = console.clear.bind(console);
 const logs = [];
-const ids = [];
+const _stdout = { write: console.log.bind(console) };
+const _stderr = { write: console.error.bind(console) };
+const _clear = await (async () => {
+  if (typeof process === "undefined" || process.platform !== 'win32') return console.clear.bind(console);
+  const { execSync } = await import("node:child_process");
+  return () => execSync("powershell.exe Clear-Host");
+})();
+const clears = [];
+const system = Symbol("system");
 
 /**
  * A class for creating and managing console logs.
@@ -11,6 +17,21 @@ const ids = [];
  * @class Console
  */
 class Console {
+  /**
+   * @typedef {Object} Writable
+   * @property {Function} write - Target directory
+   */
+  #timers = {};
+  #counts = {};
+  #groups = 0;
+  #index;
+  #date;
+  #debug;
+  #trace;
+  #stdout;
+  #stderr;
+  #clear;
+
   /**
    * @returns {string} Code to reset the console color.
    */
@@ -116,29 +137,55 @@ class Console {
     return Console;
   }
 
-  #id = "";
-  #timers = {};
-  #counts = {};
-  #groups = 0;
-  #index;
-  #date;
-  #debug;
-  #trace;
+  /**
+   * @returns {number} Console instance Position Index.
+   */
+  get index() {
+    return this.#index;
+  }
+
+  /**
+   * @returns {string[]} Console instance logs
+   */
+  get logs() {
+    return [];
+  }
+
+  /**
+   * @returns {Writable} Console instance stdout
+   */
+  get stdout() {
+    return this.#stdout;
+  }
+
+  /**
+   * @returns {Writable} Console instance stderr
+   */
+  get stderr() {
+    return this.#stderr;
+  }
 
   /**
    * Creates a new Console instance.
-   *
-   * @param {string} id - The unique identifier for the console.
+   * 
    * @param {Object} [options] - Optional configuration options.
+   * @param {Writable} [options.stdout] - Writable Stream.
+   * @param {Writable} [options.stderr] - Writable Stream.
+   * @param {Function} [options.clear] - Function to clear the Stream if available.
    * @param {boolean} [options.date] - Whether to include the date in logs. Defaults to true.
    * @param {boolean} [options.trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
    * @param {boolean} [options.debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
    * @param {number} [options.index] - The index of the console. Defaults to 0.
    */
-  constructor(id, { date, trace, debug, index = 0 } = {}) {
-    if (typeof id !== "string") throw new Error("Error console needs an id");
-    if (ids.indexOf(id) != -1)
-      throw new Error("Error console id needs to be unique.");
+  constructor(options) {
+    // @ts-ignore
+    const isSystem = options === system;
+    // @ts-ignore
+    const { stdout, stderr, clear, date, trace, debug, index = 0, } = (isSystem ? { index: -1337, date: false } : options) || {};
+    if (!isSystem && index < 0) throw new TypeError("The index needs to be a positive number or 0");
+    this.#stdout = stdout || _stdout;
+    this.#stderr = stderr || _stderr;
+    this.#clear = clear || _clear;
     const prototype = Object.getPrototypeOf(this);
     const functions = Object.getOwnPropertyNames(prototype);
     for (let i = 0, len = functions.length; i < len; i++) {
@@ -147,7 +194,6 @@ class Console {
       if (typeof descriptor.get === 'undefined' && typeof descriptor.set === 'undefined')
         this[functions[i]] = this[functions[i]].bind(this);
     }
-    ids.push(((this.#id = id), id));
     this.#date = date !== false;
     this.#debug = process.stdout.isTTY
       ? debug == null
@@ -156,7 +202,13 @@ class Console {
       : true;
     this.#trace = trace == null ? process.env.NODE_TRACE : trace;
     this.#index = index;
-    clear();
+    let exits = false;
+    for (let i = 0, len = clears.length; i < len; i++) {
+      if (clears[i] !== this.#clear) continue;
+      exits = true;
+      break;
+    }
+    if (!exits) clears.push(this.#clear), this.#clear();
   }
 
   /**
@@ -189,9 +241,9 @@ class Console {
     clear();
     let i = 0;
     while (logs[i]) {
-      if (logs[i].id === this.#id) logs.splice(i, 1);
+      if (logs[i].instance === this) logs.splice(i, 1);
       else {
-        write(logs[i].message);
+        write(logs[i]);
         i++;
       }
     }
@@ -343,11 +395,10 @@ class Console {
    * Ends a profile measurement.
    *
    * @param {string} key - The key of the profile measurement.
-   * @param {boolean} [print] - Whether to print the time difference. Defaults to true.
    */
-  profileEnd(key, print = true) {
+  profileEnd(key) {
     if (!this.#timers[key]) return;
-    if (print) this.timeStamp(key);
+    this.timeStamp(key);
     delete this.#timers[key];
   }
 
@@ -403,7 +454,7 @@ class Console {
    * @param {string} key - The key of the time measurement.
    * @param {boolean} [force] - Overwrites existing keys.
    */
-  time(key, force = false) {
+  time(key, force) {
     if (!force && this.#timers[key])
       return console.warn(`${key} already exists.`);
     this.#timers[key] = date();
@@ -415,9 +466,9 @@ class Console {
    * @param {string} key - The key of the time measurement.
    * @param {boolean} print - Whether to print the time difference. Defaults to true.
    */
-  timeEnd(key, print = true) {
+  timeEnd(key, print) {
     if (!this.#timers[key]) return;
-    if (print) this.timeStamp(key);
+    if (print !== false) this.timeStamp(key);
     delete this.#timers[key];
   }
 
@@ -486,7 +537,7 @@ class Console {
    */
   #apply({ type, data, color, date, trace }) {
     if (!(data?.length > 0)) return;
-    const log = { id: this.#id, type, date, message: "" };
+    const log = { instance: this, type, date, message: "" };
     let initial = color || "";
     if (this.#date && date)
       initial = `${this.dim}[${date}]${color || this.reset} `;
@@ -514,27 +565,39 @@ class Console {
     if (trace || this.#trace)
       log.message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
     log.message += this.reset;
-    if (this.#debug) {
-      write(log.message);
-      logs.push(log);
-      return;
-    }
-    log.index = this.#index;
-    let acc = "";
-    let placement;
-    for (let i = 0, len = logs.length; i < len; i++) {
-      if (placement == null) {
-        if (log.index < logs[i].index) {
-          placement = i;
-          clear();
-          write(acc + log.message);
-        } else acc += logs[i].message + "\n";
-      } else write(logs[i].message);
-    }
-    if (placement == null) (placement = logs.length), write(log.message);
-    logs.splice(placement, 0, log);
+    if (this.#debug) return logs.push(write(log, true));
+    const index = findLogIndex(log);
+    if (index == -1) return logs.push(write(log));
+    logs.splice(index, 0, log);
+    clear();
+    for (let i = 0, len = logs.length; i < len; i++) write(logs[i]);
   }
 }
 
 // @ts-ignore
-global.console = new Console("");
+global.console = new Console();
+// @ts-ignore
+global.system = new Console(system);
+
+function write(log, force) {
+  if (log.type === "error") {
+    if (!force && log.instance.index >= 0 && log.instance.stderr === _stderr && process.env.NODE_CONSOLE === "false") return log;
+    log.instance?.stderr?.write(log.message);
+  }
+  else {
+    if (!force && log.instance.index >= 0 && log.instance.stdout === _stdout && process.env.NODE_CONSOLE === "false") return log;
+    log.instance?.stdout?.write(log.message);
+  }
+  return log;
+}
+
+function clear() {
+  for (let i = 0, len = clears.length; i < len; i++) clears[i]();
+}
+
+function findLogIndex(log) {
+  for (let i = 0, len = logs.length; i < len; i++)
+    if (log.instance.index < logs[i].instance.index) return i;
+  return -1;
+}
+

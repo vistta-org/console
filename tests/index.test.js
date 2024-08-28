@@ -1,133 +1,157 @@
 import "../index.js";
 
 describe("Console", () => {
-  let _console;
+  let logger;
+  const logs = [];
   it("Constructor", () => {
-    _console = new console.Console("_console");
-    assert.ok(!!_console);
-    assert.equal(console.constructor, _console.Console);
+    const write = (data) => logs.push(data);
+    logger = new console.Console({
+      stdout: { write }, stderr: { write }, clear: () => logs.length = 0,
+    });
+    assert.ok(!!logger);
+    assert.equal(console.constructor, logger.Console);
   });
 
   it("Static", () => {
-    assert.equal(typeof _console.reset, "string");
-    assert.equal(typeof _console.bright, "string");
-    assert.equal(typeof _console.dim, "string");
-    assert.equal(typeof _console.underscore, "string");
-    assert.equal(typeof _console.blink, "string");
-    assert.equal(typeof _console.reverse, "string");
-    assert.equal(typeof _console.black, "string");
-    assert.equal(typeof _console.red, "string");
-    assert.equal(typeof _console.green, "string");
-    assert.equal(typeof _console.yellow, "string");
-    assert.equal(typeof _console.blue, "string");
-    assert.equal(typeof _console.magenta, "string");
-    assert.equal(typeof _console.cyan, "string");
-    assert.equal(typeof _console.white, "string");
+    assert.equal(typeof logger.reset, "string");
+    assert.equal(typeof logger.bright, "string");
+    assert.equal(typeof logger.dim, "string");
+    assert.equal(typeof logger.underscore, "string");
+    assert.equal(typeof logger.blink, "string");
+    assert.equal(typeof logger.reverse, "string");
+    assert.equal(typeof logger.black, "string");
+    assert.equal(typeof logger.red, "string");
+    assert.equal(typeof logger.green, "string");
+    assert.equal(typeof logger.yellow, "string");
+    assert.equal(typeof logger.blue, "string");
+    assert.equal(typeof logger.magenta, "string");
+    assert.equal(typeof logger.cyan, "string");
+    assert.equal(typeof logger.white, "string");
   });
 
   it("Announce", () => {
-    _console.announce("test");
-    assert.equal(typeof _console.announce, "function");
+    const len = logs.length;
+    logger.announce(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Assert", () => {
-    _console.assert(typeof _console.assert, "function");
-    assert.equal(typeof _console.assert, "function");
+    const len = logs.length;
+    logger.assert(typeof logger.assert, "function");
+    assert.equal(len + 1, logs.length);
   });
 
   it("Clear", () => {
-    _console.clear();
-    assert.equal(typeof _console.clear, "function");
+    logger.clear();
+    assert.equal(0, logs.length);
   });
 
   it("Count", () => {
-    _console.count("test");
-    _console.countReset("test");
-    assert.equal(typeof _console.count, "function");
-    assert.equal(typeof _console.countReset, "function");
+    const len = logs.length;
+    logger.count("count");
+    assert.equal(len + 1, logs.length);
+    logger.countReset("count");
+    assert.equal(len + 1, logs.length);
   });
 
   it("Println", () => {
-    _console.println();
-    assert.equal(typeof _console.println, "function");
+    const len = logs.length;
+    logger.println();
+    assert.equal(len + 1, logs.length);
   });
 
   it("Print", () => {
-    _console.print("test");
-    assert.equal(typeof _console.print, "function");
+    const len = logs.length;
+    logger.print(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Debug", () => {
-    _console.debug("test");
-    assert.equal(typeof _console.debug, "function");
+    const len = logs.length;
+    logger.debug(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Dir", () => {
-    _console.dir({ 1: "test" });
-    _console.dirxml({ 1: "test" });
-    assert.equal(typeof _console.dir, "function");
-    assert.equal(typeof _console.dirxml, "function");
+    const len = logs.length;
+    logger.dir({ logs });
+    assert.equal(len + 1, logs.length);
+    logger.dirxml({ logs });
+    assert.equal(len + 2, logs.length);
   });
 
   it("Error", () => {
-    _console.error("test");
-    assert.equal(typeof _console.error, "function");
+    const len = logs.length;
+    logger.error(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Group", () => {
-    _console.group();
-    _console.groupCollapsed();
-    _console.groupEnd();
-    assert.equal(typeof _console.group, "function");
-    assert.equal(typeof _console.groupCollapsed, "function");
-    assert.equal(typeof _console.groupEnd, "function");
+    logger.group();
+    logger.groupCollapsed();
+    logger.groupEnd();
+    assert.equal(typeof logger.group, "function");
+    assert.equal(typeof logger.groupCollapsed, "function");
+    assert.equal(typeof logger.groupEnd, "function");
   });
 
   it("Info", () => {
-    _console.info("test");
-    assert.equal(typeof _console.info, "function");
+    const len = logs.length;
+    logger.info(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Log", () => {
-    _console.log("test");
-    assert.equal(typeof _console.log, "function");
+    const len = logs.length;
+    logger.log(len);
+    assert.equal(typeof logger.log, "function");
   });
 
   it("Success", () => {
-    _console.success("test");
-    assert.equal(typeof _console.success, "function");
+    const len = logs.length;
+    logger.success(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Table", () => {
-    _console.table(["test"]);
-    assert.equal(typeof _console.table, "function");
+    const len = logs.length;
+    logger.table(logs);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Time", () => {
-    _console.time("test");
-    _console.timeLog("test");
-    _console.timeStamp("test");
-    _console.timeEnd("test");
-    assert.equal(typeof _console.time, "function");
-    assert.equal(typeof _console.timeLog, "function");
-    assert.equal(typeof _console.timeStamp, "function");
-    assert.equal(typeof _console.timeEnd, "function");
+    const len = logs.length;
+    logger.time("time1");
+    assert.equal(len, logs.length);
+    logger.timeLog("time1");
+    assert.equal(len + 1, logs.length);
+    logger.timeEnd("time1");
+    assert.equal(len + 2, logs.length);
+    logger.time("time2");
+    assert.equal(len + 2, logs.length);
+    logger.timeStamp("time2");
+    assert.equal(len + 3, logs.length);
+    logger.timeEnd("time2", false);
+    assert.equal(len + 3, logs.length);
   });
 
   it("Trace", () => {
-    _console.trace("test");
-    assert.equal(typeof _console.trace, "function");
+    const len = logs.length;
+    logger.trace(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Warn", () => {
-    _console.warn("test");
-    assert.equal(typeof _console.warn, "function");
+    const len = logs.length;
+    logger.warn(len);
+    assert.equal(len + 1, logs.length);
   });
 
   it("Profile", () => {
-    _console.profile("test");
-    _console.profileEnd("test", true);
-    assert.equal(typeof _console.profile, "function");
-    assert.equal(typeof _console.profileEnd, "function");
+    const len = logs.length;
+    logger.profile("profile");
+    assert.equal(len, logs.length);
+    logger.profileEnd("profile");
+    assert.equal(len + 1, logs.length);
   });
 });
