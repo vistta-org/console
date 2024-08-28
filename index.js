@@ -10,6 +10,7 @@ const _clear = await (async () => {
 })();
 const clears = [];
 const system = Symbol("system");
+const isTTY = typeof process === "undefined" || process.stdout.isTTY;
 
 /**
  * A class for creating and managing console logs.
@@ -31,6 +32,7 @@ class Console {
   #stdout;
   #stderr;
   #clear;
+  #custom
 
   /**
    * @returns {string} Code to reset the console color.
@@ -195,11 +197,8 @@ class Console {
         this[functions[i]] = this[functions[i]].bind(this);
     }
     this.#date = date !== false;
-    this.#debug = process.stdout.isTTY
-      ? debug == null
-        ? process.env.NODE_DEBUG
-        : debug
-      : true;
+    this.#custom = this.#stdout !== _stdout || this.#stderr !== _stderr;
+    this.#debug = debug == null ? process.env.NODE_DEBUG : debug;
     this.#trace = trace == null ? process.env.NODE_TRACE : trace;
     this.#index = index;
     let exits = false;
@@ -237,13 +236,14 @@ class Console {
    * Clears the console.
    */
   clear() {
-    if (this.#debug) return;
-    clear();
+    if (this.#debug || (!this.#custom && !isTTY)) return;
+    if (this.#custom) this.#clear();
+    else clear();
     let i = 0;
     while (logs[i]) {
       if (logs[i].instance === this) logs.splice(i, 1);
       else {
-        write(logs[i]);
+        if (!this.#custom) write(logs[i]);
         i++;
       }
     }
@@ -565,7 +565,8 @@ class Console {
     if (trace || this.#trace)
       log.message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
     log.message += this.reset;
-    if (this.#debug) return logs.push(write(log, true));
+    if (this.#debug || !isTTY) return logs.push(write(log, true));
+    if (this.#custom) return logs.push(write(log));
     const index = findLogIndex(log);
     if (index == -1) return logs.push(write(log));
     logs.splice(index, 0, log);

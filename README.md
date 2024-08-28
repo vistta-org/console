@@ -258,7 +258,6 @@ class Console {
    * Ends a profile measurement.
    *
    * @param {string} key - The key of the profile measurement.
-   * @param {boolean} [print] - Whether to print the time difference. Defaults to true.
    */
   profileEnd(key, print = true);
 
