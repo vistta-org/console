@@ -13,35 +13,38 @@ npm install @vistta/console
 ### **Usage**
 
 ```javascript
-import "@vistta/console.js";
+import { Console } from "@vistta/console.js";
+
+const logger = new Console();
 
 // Log a message
-console.log("Hello, world!");
+logger.log("Hello, world!");
 
 // Log an error
-console.error("Something went wrong!");
+logger.error("Something went wrong!");
 
 // Log a warning
-console.warn("Attention required!");
+logger.warn("Attention required!");
 
 // Log a debug message
-console.debug("This is a debug message.");
+logger.debug("This is a debug message.");
 
 // Group messages
-console.group("Group 1");
-console.log("Message 1");
-console.log("Message 2");
-console.groupEnd();
+logger.group("Group 1");
+logger.log("Message 1");
+logger.log("Message 2");
+logger.groupEnd();
 
 // Time a function
-console.time("function_name");
+logger.time("function_name");
 // Function code here
-console.timeEnd("function_name");
+logger.timeEnd("function_name");
 
 // Time a function
-const logger = new console.Console({ index: 1 });
-logger.log("Index 1");
+const logger2 = new logger.Console({ index: -1, date: false, colors: false });
+logger.clear();
 logger.log("Index 0");
+logger2.log("Index -1");
 ```
 
 ## **API**
@@ -49,93 +52,28 @@ logger.log("Index 0");
 ```typescript
 class Console {
   /**
-   * @returns {string} Code to reset the console color.
-   */
-  get reset();
-
-  /**
-   * @returns {string} Code to make the text bright.
-   */
-  get bright();
-
-  /**
-   * @returns {string} Code to make the text dim.
-   */
-  get dim();
-
-  /**
-   * @returns {string} Code to underline the text.
-   */
-  get underscore() {
-    return typeof process === "undefined" ? "" : "\x1b[4m";
-  }
-
-  /**
-   * @returns {string} Code to blink the text.
-   */
-  get blink();
-
-  /**
-   * @returns {string} Code to reverse the text color.
-   */
-  get reverse();
-
-  /**
-   * @returns {string} Code to set the text color to black.
-   */
-  get black();
-
-  /**
-   * @returns {string} Code to set the text color to red.
-   */
-  get red();
-
-  /**
-   * @returns {string} Code to set the text color to green.
-   */
-  get green();
-
-  /**
-   * @returns {string} Code to set the text color to yellow.
-   */
-  get yellow();
-
-  /**
-   * @returns {string} Code to set the text color to blue.
-   */
-  get blue();
-
-  /**
-   * @returns {string} Code to set the text color to magenta.
-   */
-  get magenta();
-
-  /**
-   * @returns {string} Code to set the text color to cyan.
-   */
-  get cyan();
-
-  /**
-   * @returns {string} Code to set the text color to white.
-   */
-  get white();
-
-  /**
    * @returns {typeof Console} Console Instance Class.
    */
   get Console();
 
   /**
+   * @returns {string[]} Console instance logs
+   */
+  get logs();
+
+  /**
    * Creates a new Console instance.
    *
-   * @param {Object} [options] - Optional configuration options.
-   * @param {Writable} [options.stdout] - Writable Stream.
-   * @param {Writable} [options.stderr] - Writable Stream.
-   * @param {Function} [options.clear] - Function to clear the Stream if available.
-   * @param {boolean} [options.date] - Whether to include the date in logs. Defaults to true.
-   * @param {boolean} [options.trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
-   * @param {boolean} [options.debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
-   * @param {number} [options.index] - The index of the console. Defaults to 0.
+   * @typedef {Object} Options
+   * @property {WritableStreamDefaultWriter} [writer] - Writable Stream.
+   * @property {Function} [clear] - Function to clear the Stream if available.
+   * @property {boolean} [date] - Whether to include the date in logs. Defaults to true.
+   * @property {boolean | COLORS} [colors] - Whether to include colors in logs or object of the colors. Defaults to true if no writer is passed.
+   * @property {boolean} [trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
+   * @property {boolean} [debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
+   * @property {number} [index] - The index of the console. Defaults to 0.
+   *
+   * @param {Options} [options] - Optional configuration options or true for system default.
    */
   constructor(options);
 
@@ -321,6 +259,81 @@ class Console {
    */
   warn(...data);
 }
+
+/**
+ * Object containing ANSI escape codes for text formatting.
+ */
+const colors = {
+  /**
+   * @returns {string} Code to reset the console color.
+   */
+  reset,
+
+  /**
+   * @returns {string} Code to make the text bright.
+   */
+  bright,
+
+  /**
+   * @returns {string} Code to make the text dim.
+   */
+  dim,
+
+  /**
+   * @returns {string} Code to underline the text.
+   */
+  underscore,
+
+  /**
+   * @returns {string} Code to blink the text.
+   */
+  blink,
+
+  /**
+   * @returns {string} Code to reverse the text color.
+   */
+  reverse,
+
+  /**
+   * @returns {string} Code to set the text color to black.
+   */
+  black,
+
+  /**
+   * @returns {string} Code to set the text color to red.
+   */
+  red,
+
+  /**
+   * @returns {string} Code to set the text color to green.
+   */
+  green,
+
+  /**
+   * @returns {string} Code to set the text color to yellow.
+   */
+  yellow,
+
+  /**
+   * @returns {string} Code to set the text color to blue.
+   */
+  blue,
+
+  /**
+   * @returns {string} Code to set the text color to magenta.
+   */
+  magenta,
+
+  /**
+   * @returns {string} Code to set the text color to cyan.
+   */
+  cyan,
+
+  /**
+   * @returns {string} Code to set the text color to white.
+   */
+  white,
+};
 ```
 
 ## **License**

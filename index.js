@@ -1,15 +1,93 @@
 // @ts-check
 import { date } from "@vistta/date-time";
+
+const IS_TTY = typeof process === "undefined" || process.stdout.isTTY;
+const CONSOLE_FALLBACK = console;
 const logs = [];
-const _stdout = { write: console.log.bind(console) };
-const _stderr = { write: console.error.bind(console) };
-const _clear = await (async () => {
+const write = ({ message, type }) => {
+  if (type === "error") CONSOLE_FALLBACK.error(message);
+  else CONSOLE_FALLBACK.log(message);
+};
+const clear = await (async () => {
   if (typeof process === "undefined" || process.platform !== 'win32') return console.clear.bind(console);
   const { execSync } = await import("node:child_process");
   return () => execSync("powershell.exe Clear-Host");
 })();
-const clears = [];
-const isTTY = typeof process === "undefined" || process.stdout.isTTY;
+
+/**
+ * Object containing ANSI escape codes for text formatting.
+ */
+const COLORS = typeof process !== "undefined" && {
+  /**
+   * @returns {string} Code to reset the console color.
+   */
+  reset: "\x1b[0m",
+
+  /**
+   * @returns {string} Code to make the text bright.
+   */
+  bright: "\x1b[1m",
+
+  /**
+   * @returns {string} Code to make the text dim.
+   */
+  dim: "\x1b[2m",
+
+  /**
+   * @returns {string} Code to underline the text.
+   */
+  underscore: "\x1b[4m",
+
+  /**
+   * @returns {string} Code to blink the text.
+   */
+  blink: "\x1b[5m",
+
+  /**
+   * @returns {string} Code to reverse the text color.
+   */
+  reverse: "\x1b[7m",
+
+  /**
+   * @returns {string} Code to set the text color to black.
+   */
+  black: "\x1b[30m",
+
+  /**
+   * @returns {string} Code to set the text color to red.
+   */
+  red: "\x1b[31m",
+
+  /**
+   * @returns {string} Code to set the text color to green.
+   */
+  green: "\x1b[32m",
+
+  /**
+   * @returns {string} Code to set the text color to yellow.
+   */
+  yellow: "\x1b[33m",
+
+  /**
+   * @returns {string} Code to set the text color to blue.
+   */
+  blue: "\x1b[34m",
+
+  /**
+   * @returns {string} Code to set the text color to magenta.
+   */
+  magenta: "\x1b[35m",
+
+  /**
+   * @returns {string} Code to set the text color to cyan.
+   */
+  cyan: "\x1b[36m",
+
+  /**
+   * @returns {string} Code to set the text color to white.
+   */
+  white: "\x1b[37m"
+};
 
 /**
  * A class for creating and managing console logs.
@@ -17,119 +95,17 @@ const isTTY = typeof process === "undefined" || process.stdout.isTTY;
  * @class Console
  */
 class Console {
-  /**
-   * @typedef {Object} Writable
-   * @property {Function} write - Target directory
-   */
+  #logs = [];
   #timers = {};
   #counts = {};
   #groups = 0;
+  #writer;
+  #clear;
   #index;
   #date;
+  #colors;
   #debug;
   #trace;
-  #stdout;
-  #stderr;
-  #clear;
-  #custom
-
-  /**
-   * @returns {string} Code to reset the console color.
-   */
-  get reset() {
-    return typeof process === "undefined" ? "" : "\x1b[0m";
-  }
-
-  /**
-   * @returns {string} Code to make the text bright.
-   */
-  get bright() {
-    return typeof process === "undefined" ? "" : "\x1b[1m";
-  }
-
-  /**
-   * @returns {string} Code to make the text dim.
-   */
-  get dim() {
-    return typeof process === "undefined" ? "" : "\x1b[2m";
-  }
-
-  /**
-   * @returns {string} Code to underline the text.
-   */
-  get underscore() {
-    return typeof process === "undefined" ? "" : "\x1b[4m";
-  }
-
-  /**
-   * @returns {string} Code to blink the text.
-   */
-  get blink() {
-    return typeof process === "undefined" ? "" : "\x1b[5m";
-  }
-
-  /**
-   * @returns {string} Code to reverse the text color.
-   */
-  get reverse() {
-    return typeof process === "undefined" ? "" : "\x1b[7m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to black.
-   */
-  get black() {
-    return typeof process === "undefined" ? "" : "\x1b[30m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to red.
-   */
-  get red() {
-    return typeof process === "undefined" ? "" : "\x1b[31m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to green.
-   */
-  get green() {
-    return typeof process === "undefined" ? "" : "\x1b[32m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to yellow.
-   */
-  get yellow() {
-    return typeof process === "undefined" ? "" : "\x1b[33m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to blue.
-   */
-  get blue() {
-    return typeof process === "undefined" ? "" : "\x1b[34m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to magenta.
-   */
-  get magenta() {
-    return typeof process === "undefined" ? "" : "\x1b[35m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to cyan.
-   */
-  get cyan() {
-    return typeof process === "undefined" ? "" : "\x1b[36m";
-  }
-
-  /**
-   * @returns {string} Code to set the text color to white.
-   */
-  get white() {
-    return typeof process === "undefined" ? "" : "\x1b[37m";
-  }
 
   /**
    * @returns {typeof Console} Console Instance Class.
@@ -139,51 +115,39 @@ class Console {
   }
 
   /**
-   * @returns {number} Console instance Position Index.
-   */
-  get index() {
-    return this.#index;
-  }
-
-  /**
    * @returns {string[]} Console instance logs
    */
   get logs() {
-    return [];
-  }
-
-  /**
-   * @returns {Writable} Console instance stdout
-   */
-  get stdout() {
-    return this.#stdout;
-  }
-
-  /**
-   * @returns {Writable} Console instance stderr
-   */
-  get stderr() {
-    return this.#stderr;
+    return this.#logs;
   }
 
   /**
    * Creates a new Console instance.
    * 
    * @typedef {Object} Options
-   * @property {Writable} [stdout] - Writable Stream.
-   * @property {Writable} [stderr] - Writable Stream.
+   * @property {WritableStreamDefaultWriter} [writer] - Writable Stream.
    * @property {Function} [clear] - Function to clear the Stream if available.
    * @property {boolean} [date] - Whether to include the date in logs. Defaults to true.
+   * @property {boolean | COLORS} [colors] - Whether to include colors in logs or object of the colors. Defaults to true if no writer is passed.
    * @property {boolean} [trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
    * @property {boolean} [debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
    * @property {number} [index] - The index of the console. Defaults to 0.
    * 
    * @param {Options} [options] - Optional configuration options or true for system default.
    */
-  constructor({ stdout, stderr, clear, date, trace, debug, index } = {}) {
-    this.#stdout = stdout || _stdout;
-    this.#stderr = stderr || _stderr;
-    this.#clear = clear || _clear;
+  constructor({ writer, clear, date, colors, trace, debug, index } = {}) {
+    // eslint-disable-next-line no-undef
+    if (writer && !(writer instanceof WritableStreamDefaultWriter)) throw new TypeError("Console expects a WritableStreamDefaultWriter instance for writer");
+    if (clear) {
+      if (typeof clear !== "function") throw new TypeError("Console expects a Function instance for clear");
+      if (!writer) throw new TypeError("Console clear can only be set if writer is set");
+    }
+    if (index != null) {
+      if (typeof index !== "number") throw new TypeError("Console expects a number for index");
+      if (writer) throw new TypeError("Console index cannot be set if writer is set");
+    }
+    this.#writer = writer;
+    this.#clear = clear;
     const prototype = Object.getPrototypeOf(this);
     const functions = Object.getOwnPropertyNames(prototype);
     for (let i = 0, len = functions.length; i < len; i++) {
@@ -193,17 +157,13 @@ class Console {
         this[functions[i]] = this[functions[i]].bind(this);
     }
     this.#date = date !== false;
-    this.#custom = this.#stdout !== _stdout || this.#stderr !== _stderr;
     this.#debug = debug == null ? process.env.NODE_DEBUG : debug;
     this.#trace = trace == null ? process.env.NODE_TRACE : trace;
+    if (colors === true) this.#colors = COLORS;
+    else if (colors === false) this.#colors = {}
+    else this.#colors = colors || (writer ? {} : COLORS);
     this.#index = index == null ? 0 : index;
-    let found = false;
-    for (let i = 0, len = clears.length; i < len; i++) {
-      if (clears[i] !== this.#clear) continue;
-      found = true;
-      break;
-    }
-    if (!found) clears.push(this.#clear), this.#clear();
+    this.clear();
   }
 
   /**
@@ -212,7 +172,7 @@ class Console {
    * @param {...any} data - The message to announce.
    */
   announce(...data) {
-    this.#apply({ type: "announce", data, color: this.bright });
+    this.#apply({ type: "announce", data, color: this.#colors?.bright });
   }
 
   /**
@@ -223,8 +183,8 @@ class Console {
    */
   assert(condition, ...data) {
     if (condition)
-      data.unshift(`${this.green}Assertion passed${this.reset}`);
-    else data.unshift(`${this.red}Assertion failed${this.reset}`);
+      data.unshift(`${this.#colors?.green}Assertion passed${this.#colors?.reset}`);
+    else data.unshift(`${this.#colors?.red}Assertion failed${this.#colors?.reset}`);
     this.#apply({ type: "assert", data });
   }
 
@@ -232,14 +192,15 @@ class Console {
    * Clears the console.
    */
   clear() {
-    if (this.#debug || (!this.#custom && !isTTY)) return;
-    if (this.#custom) this.#clear();
-    else clear();
+    if (this.#clear) return (this.#logs = [], this.#clear());
+    if (this.#debug || !IS_TTY) return;
+    clear();
     let i = 0;
+    this.#logs = [];
     while (logs[i]) {
       if (logs[i].instance === this) logs.splice(i, 1);
       else {
-        if (!this.#custom) write(logs[i]);
+        write(logs[i].log);
         i++;
       }
     }
@@ -320,7 +281,7 @@ class Console {
     this.#apply({
       type: "error",
       data,
-      color: this.red,
+      color: this.#colors?.red,
       date: date().toString(),
     });
   }
@@ -361,7 +322,7 @@ class Console {
     this.#apply({
       type: "info",
       data,
-      color: this.cyan,
+      color: this.#colors?.cyan,
       date: date().toString(),
     });
   }
@@ -407,7 +368,7 @@ class Console {
     this.#apply({
       type: "success",
       data,
-      color: this.green,
+      color: this.#colors?.green,
       date: date().toString(),
     });
   }
@@ -477,7 +438,7 @@ class Console {
   timeLog(key, ...data) {
     if (!this.#timers[key]) return;
     data.push(
-      `${this.reset + this.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
+      `${this.#colors?.reset + this.#colors?.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
     );
     this.#apply({ type: "timeLog", data, date: date().toString() });
   }
@@ -492,7 +453,7 @@ class Console {
     this.#apply({
       type: "warn",
       data: [
-        `${key} ${this.reset + this.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
+        `${key} ${this.#colors?.reset + this.#colors?.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
       ],
       date: date().toString(),
     });
@@ -516,12 +477,10 @@ class Console {
     this.#apply({
       type: "warn",
       data,
-      color: this.yellow,
+      color: this.#colors?.yellow,
       date: date().toString(),
     });
   }
-
-  //
 
   /**
    * @param {Object} options
@@ -533,59 +492,43 @@ class Console {
    */
   #apply({ type, data, color, date, trace }) {
     if (!(data?.length > 0)) return;
-    const log = { instance: this, type, date, message: "" };
-    let initial = color || "";
-    if (this.#date && date)
-      initial = `${this.dim}[${date}]${color || this.reset} `;
-    log.message += "\t".repeat(this.#groups);
-    log.message += data.reduce((message, value, index) => {
-      const spacer = index === 0 ? "" : " ";
-      if (typeof value === "object")
-        return (
-          message +
-          spacer +
-          JSON.stringify(
-            value,
-            ((seen) => (_, value) => {
-              if (typeof value === "object" && value !== null) {
-                if (seen.has(value)) return;
-                seen.add(value);
-              }
-              return value;
-            })(new WeakSet()),
-            4,
-          )
-        );
-      return message + spacer + `${value}`;
-    }, initial);
-    if (trace || this.#trace)
-      log.message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
-    log.message += this.reset;
-    if (this.#debug || !isTTY) return logs.push(write(log));
-    if (this.#custom) return logs.push(write(log));
+    let message = this.#date && date ? `${this.#colors?.dim || ""}[${date}]${color || this.#colors?.reset || ""} ` : (color || "");
+    message += "\t".repeat(this.#groups);
+    for (let i = 0, len = data.length; i < len; i++) {
+      const value = data[i];
+      message += (i === 0 ? "" : " ") + (typeof value === "object" ? JSON.stringify(value, duplicateReplacer(), 4) : value);
+    }
+    if (trace || this.#trace) message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
+    message += this.#colors?.reset || "";
+    const log = { type, message, data, color, date, trace };
+    this.#logs.push(log);
+    if (this.#writer) return this.#writer.write(log);
+    if (this.#debug || !IS_TTY) return logs.push((write(log), { instance: this, index: this.#index, log }));
     const index = findLogIndex(log);
-    if (index == -1) return logs.push(write(log));
+    if (index == -1) return logs.push((write(log), { instance: this, index: this.#index, log }));
     logs.splice(index, 0, log);
     clear();
-    for (let i = 0, len = logs.length; i < len; i++) write(logs[i]);
+    for (let i = 0, len = logs.length; i < len; i++) write(logs[i].log);
   }
 }
 
-export { Console };
+export { Console, COLORS as colors };
 
-function write(log) {
-  if (log.type === "error") log.instance?.stderr?.write(log.message);
-  else log.instance?.stdout?.write(log.message);
-  return log;
-}
-
-function clear() {
-  for (let i = 0, len = clears.length; i < len; i++) clears[i]();
+function duplicateReplacer(set = new WeakSet()) {
+  return function (_, value) {
+    if (typeof value === "object" && value !== null) {
+      if (set.has(value)) {
+        return;
+      }
+      set.add(value);
+    }
+    return value;
+  };
 }
 
 function findLogIndex(log) {
   for (let i = 0, len = logs.length; i < len; i++)
-    if (log.instance.index < logs[i].instance.index) return i;
+    if (log.index < logs[i].index) return i;
   return -1;
 }
 
