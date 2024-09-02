@@ -1,5 +1,6 @@
 // @ts-check
 import { date } from "@vistta/date-time";
+import { execSync } from "node:child_process";
 
 const IS_TTY = typeof process === "undefined" || process.stdout.isTTY;
 const CONSOLE_FALLBACK = console;
@@ -8,11 +9,7 @@ const write = ({ message, type }) => {
   if (type === "error") CONSOLE_FALLBACK.error(message);
   else CONSOLE_FALLBACK.log(message);
 };
-const clear = await (async () => {
-  if (typeof process === "undefined" || process.platform !== 'win32') return console.clear.bind(console);
-  const { execSync } = await import("node:child_process");
-  return () => execSync("powershell.exe Clear-Host");
-})();
+const clear = typeof process === "undefined" || process.platform !== 'win32' ? console.clear.bind(console) : () => execSync("powershell.exe Clear-Host");
 
 /**
  * Object containing ANSI escape codes for text formatting.
@@ -504,14 +501,15 @@ class Console {
     this.#logs.push(log);
     if (this.#writer) return this.#writer.write(log);
     if (this.#debug || !IS_TTY) return logs.push((write(log), { instance: this, index: this.#index, log }));
-    const index = findLogIndex(log);
+    const index = findLogIndex(this.#index);
     if (index == -1) return logs.push((write(log), { instance: this, index: this.#index, log }));
-    logs.splice(index, 0, log);
+    logs.splice(index, 0, { instance: this, index: this.#index, log });
     clear();
     for (let i = 0, len = logs.length; i < len; i++) write(logs[i].log);
   }
 }
 
+export default Console;
 export { Console, COLORS as colors };
 
 function duplicateReplacer(set = new WeakSet()) {
@@ -526,9 +524,9 @@ function duplicateReplacer(set = new WeakSet()) {
   };
 }
 
-function findLogIndex(log) {
+function findLogIndex(index) {
   for (let i = 0, len = logs.length; i < len; i++)
-    if (log.index < logs[i].index) return i;
+    if (index < logs[i].index) return i;
   return -1;
 }
 
