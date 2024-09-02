@@ -154,12 +154,12 @@ class Console {
         this[functions[i]] = this[functions[i]].bind(this);
     }
     this.#date = date !== false;
-    this.#debug = debug == null ? process.env.NODE_DEBUG : debug;
-    this.#trace = trace == null ? process.env.NODE_TRACE : trace;
+    this.#debug = debug ?? process.env.NODE_DEBUG;
+    this.#trace = trace ?? process.env.NODE_TRACE;
     if (colors === true) this.#colors = COLORS;
     else if (colors === false) this.#colors = {}
     else this.#colors = colors || (writer ? {} : COLORS);
-    this.#index = index == null ? 0 : index;
+    this.#index = index ?? 0;
     this.clear();
   }
 
