@@ -3,7 +3,13 @@
   "version": "0.2.0",
   "description": "Vistta Console Library",
   "main": "index.js",
+  "types": "global.d.ts",
   "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./global": "./global.js",
+    "./colors": "./colors.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://git.vistta.org/vistta/console.git"
@@ -13,11 +19,7 @@
   },
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
-  "files": [
-    "LICENSE",
-    "tsconfig.json"
-  ],
   "dependencies": {
-    "@vistta/date-time": "*"
+    "@vistta/utils": "*"
   }
 }
