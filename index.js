@@ -144,11 +144,10 @@ export class Console extends BoundClass {
       else
         throw new TypeError("Console expects a function instance for stdclear");
       if (
-        !stderr ||
-        (typeof stderr === "object" && typeof stderr.write === "function")
+        stderr && (typeof stderr === "object" && typeof stderr.write === "function")
       )
         this.#stderr = stderr;
-      else
+      else if(stderr)
         throw new TypeError(
           "Console expects a writable stream instance for stderr"
         );
