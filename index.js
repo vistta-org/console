@@ -1,105 +1,73 @@
 // @ts-check
-import { date } from "@vistta/date-time";
-import { execSync } from "node:child_process";
+import { DateTime, BoundClass } from "@vistta/utils";
+import { toString as defaultToString } from "./modifiers/default.js";
+import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
 
-const IS_TTY = typeof process === "undefined" || process.stdout.isTTY;
+export const IS_TTY = typeof process === "undefined" || process?.stdout?.isTTY;
+const { execSync } = typeof process !== "undefined" && await import("node:child_process");
 const CONSOLE_FALLBACK = console;
-const logs = [];
-const write = ({ message, type }) => {
-  if (type === "error") CONSOLE_FALLBACK.error(message);
-  else CONSOLE_FALLBACK.log(message);
-};
-const clear = typeof process === "undefined" || process.platform !== 'win32' ? console.clear.bind(console) : () => execSync("powershell.exe Clear-Host");
 
 /**
- * Object containing ANSI escape codes for text formatting.
+ * @typedef {Object} Colors
+ * @property {string} reset - Reset code.
+ * @property {string} [time] - Time color code.
+ * @property {string} [error] - Error color code.
+ * @property {string} [warn] - Warning color code.
+ * @property {string} [success] - Success color code.
+ * @property {string} [info] - Info color code.
+ * @property {string} [announce] - Announce color code.
  */
-const COLORS = typeof process !== "undefined" && {
-  /**
-   * @returns {string} Code to reset the console color.
-   */
-  reset: "\x1b[0m",
-
-  /**
-   * @returns {string} Code to make the text bright.
-   */
-  bright: "\x1b[1m",
-
-  /**
-   * @returns {string} Code to make the text dim.
-   */
-  dim: "\x1b[2m",
-
-  /**
-   * @returns {string} Code to underline the text.
-   */
-  underscore: "\x1b[4m",
-
-  /**
-   * @returns {string} Code to blink the text.
-   */
-  blink: "\x1b[5m",
-
-  /**
-   * @returns {string} Code to reverse the text color.
-   */
-  reverse: "\x1b[7m",
-
-  /**
-   * @returns {string} Code to set the text color to black.
-   */
-  black: "\x1b[30m",
-
-  /**
-   * @returns {string} Code to set the text color to red.
-   */
-  red: "\x1b[31m",
-
-  /**
-   * @returns {string} Code to set the text color to green.
-   */
-  green: "\x1b[32m",
-
-  /**
-   * @returns {string} Code to set the text color to yellow.
-   */
-  yellow: "\x1b[33m",
-
-  /**
-   * @returns {string} Code to set the text color to blue.
-   */
-  blue: "\x1b[34m",
-
-  /**
-   * @returns {string} Code to set the text color to magenta.
-   */
-  magenta: "\x1b[35m",
-
-  /**
-   * @returns {string} Code to set the text color to cyan.
-   */
-  cyan: "\x1b[36m",
-
-  /**
-   * @returns {string} Code to set the text color to white.
-   */
-  white: "\x1b[37m"
+const defaultColors = {
+  reset: RESET,
+  time: DIM,
+  error: RED,
+  warn: YELLOW,
+  success: GREEN,
+  info: CYAN,
+  announce: BRIGHT,
 };
+
+class Log {
+  constructor(type, data, group, timer) {
+    if (!(data?.length > 0)) data = [""];
+    this.type = type;
+    this.data = data;
+    this.timer = timer;
+    this.time = new DateTime({
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+    this.trace = new Error().stack
+      ?.split("\n")
+      ?.slice(1)
+      ?.filter((line) => !line.includes(import.meta.url));
+    if (group) this.group = group;
+  }
+
+  toString() {
+    switch (this.type) {
+      default:
+        return defaultToString(this.data);
+    }
+  }
+}
 
 /**
  * A class for creating and managing console logs.
  *
  * @class Console
  */
-class Console {
+export class Console extends BoundClass {
+  #active = true;
+  #log;
   #logs = [];
   #timers = {};
   #counts = {};
   #groups = 0;
-  #writer;
-  #clear;
-  #index;
-  #date;
+  #stdout;
+  #stderr;
+  #stdclear;
+  #time;
   #colors;
   #debug;
   #trace;
@@ -120,56 +88,96 @@ class Console {
 
   /**
    * Creates a new Console instance.
-   * 
+   *
    * @typedef {Object} Options
-   * @property {WritableStreamDefaultWriter} [writer] - Writable Stream.
-   * @property {Function} [clear] - Function to clear the Stream if available.
-   * @property {boolean} [date] - Whether to include the date in logs. Defaults to true.
-   * @property {boolean | COLORS} [colors] - Whether to include colors in logs or object of the colors. Defaults to true if no writer is passed.
+   * @property {WritableStreamDefaultWriter | boolean} [stdout] - Writable Out Stream.
+   * @property {WritableStreamDefaultWriter | boolean} [stderr] - Writable Error Stream. Defaults to stdout.
+   * @property {Function | boolean} [stdclear] - Function to clear the Stream if available.
+   * @property {boolean} [time] - Whether to include the time in logs. Defaults to true.
+   * @property {boolean | Colors} [colors] - Whether to include colors in logs or object of the colors. Defaults to true if no writer is passed.
    * @property {boolean} [trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
    * @property {boolean} [debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
-   * @property {number} [index] - The index of the console. Defaults to 0.
-   * 
+   *
    * @param {Options} [options] - Optional configuration options or true for system default.
    */
-  constructor({ writer, clear, date, colors, trace, debug, index } = {}) {
-    // eslint-disable-next-line no-undef
-    if (writer && !(writer instanceof WritableStreamDefaultWriter)) throw new TypeError("Console expects a WritableStreamDefaultWriter instance for writer");
-    if (clear) {
-      if (typeof clear !== "function") throw new TypeError("Console expects a Function instance for clear");
-      if (!writer) throw new TypeError("Console clear can only be set if writer is set");
-    }
-    if (index != null) {
-      if (typeof index !== "number") throw new TypeError("Console expects a number for index");
-      if (writer) throw new TypeError("Console index cannot be set if writer is set");
-    }
-    this.#writer = writer;
-    this.#clear = clear;
-    const prototype = Object.getPrototypeOf(this);
-    const functions = Object.getOwnPropertyNames(prototype);
-    for (let i = 0, len = functions.length; i < len; i++) {
-      if (functions[i] === "constructor") continue;
-      const descriptor = Object.getOwnPropertyDescriptor(prototype, functions[i]);
-      if (typeof descriptor.get === 'undefined' && typeof descriptor.set === 'undefined')
-        this[functions[i]] = this[functions[i]].bind(this);
-    }
-    this.#date = date !== false;
-    this.#debug = debug ?? process.env.NODE_DEBUG;
-    this.#trace = trace ?? process.env.NODE_TRACE;
-    if (colors === true) this.#colors = COLORS;
-    else if (colors === false) this.#colors = {}
-    else this.#colors = colors || (writer ? {} : COLORS);
-    this.#index = index ?? 0;
-    this.clear();
+  // @ts-ignore
+  constructor({
+    stdout,
+    stderr,
+    stdclear,
+    time,
+    colors,
+    trace,
+    debug,
+    ...options
+  } = {}) {
+    super();
+    if (typeof options["#log"] !== "undefined") this.#log = options["#log"];
+    if (stdout === undefined || stdout === true) {
+      if (typeof process === "undefined")
+        this.#stdout = { write: (...args) => CONSOLE_FALLBACK.log(...args) };
+      else this.#stdout = process.stdout;
+      if (stderr === true) {
+        if (typeof process === "undefined")
+          this.#stderr = {
+            write: (...args) => CONSOLE_FALLBACK.error(...args),
+          };
+        else this.#stderr = process.stderr;
+      } else if (!stderr || typeof stderr.write === "function")
+        this.#stderr = stderr;
+      else
+        throw new TypeError(
+          "Console expects a writable stream instance for stderr"
+        );
+      if (stdclear === undefined || stdclear === true) {
+        if (typeof process === "undefined" || process.platform !== "win32")
+          this.#stdclear = CONSOLE_FALLBACK.clear.bind(CONSOLE_FALLBACK);
+        else this.#stdclear = () => execSync("powershell.exe Clear-Host");
+      } else if (!stdclear || typeof stdclear === "function")
+        this.#stdclear = stdclear;
+      else
+        throw new TypeError("Console expects a function instance for stdclear");
+    } else if (!stdout || typeof stdout.write === "function") {
+      this.#stdout = stdout;
+      if (!stdclear || typeof stdclear === "function")
+        this.#stdclear = stdclear;
+      else
+        throw new TypeError("Console expects a function instance for stdclear");
+      if (
+        !stderr ||
+        (typeof stderr === "object" && typeof stderr.write === "function")
+      )
+        this.#stderr = stderr;
+      else
+        throw new TypeError(
+          "Console expects a writable stream instance for stderr"
+        );
+    } else
+      throw new TypeError(
+        "Console expects a writable stream instance for stdout"
+      );
+    this.#time = time !== false;
+    this.#debug = debug ?? process?.env?.NODE_DEBUG;
+    this.#trace = trace ?? process?.env?.NODE_TRACE;
+    if (colors === true) this.#colors = defaultColors;
+    else if (colors === false) this.#colors = {};
+    else this.#colors = colors || defaultColors;
   }
+
+  /**
+   * @typedef {Object} ConsoleManipulation
+   * @property {((...data: any[]) => void) | ((replacer: (console: Console, previousData: any) => any) => void)} replace - Replaces the log entry with new data.
+   * @property {() => void} remove - Removes the log entry.
+   */
 
   /**
    * Announces a message.
    *
    * @param {...any} data - The message to announce.
+   * @returns {ConsoleManipulation}
    */
   announce(...data) {
-    this.#apply({ type: "announce", data, color: this.#colors?.bright });
+    return this.#write("announce", data);
   }
 
   /**
@@ -177,30 +185,27 @@ class Console {
    *
    * @param {boolean} condition - The condition to assert.
    * @param {...any} data - The message to log if the condition fails.
+   * @returns {ConsoleManipulation}
    */
   assert(condition, ...data) {
     if (condition)
-      data.unshift(`${this.#colors?.green}Assertion passed${this.#colors?.reset}`);
-    else data.unshift(`${this.#colors?.red}Assertion failed${this.#colors?.reset}`);
-    this.#apply({ type: "assert", data });
+      data.unshift(
+        `${this.#colors?.success || ""}Assertion passed${this.#colors?.success ? this.#colors.reset : ""}`
+      );
+    else
+      data.unshift(
+        `${this.#colors?.error}Assertion failed${this.#colors?.error ? this.#colors.reset : ""}`
+      );
+    return this.#write("log", data);
   }
 
   /**
    * Clears the console.
    */
   clear() {
-    if (this.#clear) return (this.#logs = [], this.#clear());
-    if (this.#debug || !IS_TTY) return;
-    clear();
-    let i = 0;
     this.#logs = [];
-    while (logs[i]) {
-      if (logs[i].instance === this) logs.splice(i, 1);
-      else {
-        write(logs[i].log);
-        i++;
-      }
-    }
+    if (this.#debug || !IS_TTY) return;
+    this.#stdclear?.();
   }
 
   /**
@@ -210,11 +215,7 @@ class Console {
    */
   count(key = "") {
     if (!this.#counts[key]) this.#counts[key] = 0;
-    this.#apply({
-      type: "count",
-      data: [`${key}: ${this.#counts[key]++}`],
-      date: date().toString(),
-    });
+    this.#write("log", [`${key}: ${this.#counts[key]++}`]);
   }
 
   /**
@@ -227,60 +228,60 @@ class Console {
   }
 
   /**
-   * Logs a message.
+   * Logs a message without the time log.
    *
    * @param {...any} data - The message to log.
+   * @returns {ConsoleManipulation}
    */
   print(...data) {
-    this.#apply({ type: "debug", data });
+    return this.#write("print", data);
   }
 
   /**
-   * Logs a new line.
+   * Logs a new line without the time log.
    */
   println() {
-    this.#apply({ type: "debug", data: [""] });
+    return this.#write("print", [""]);
   }
 
   /**
    * Logs a debug message.
    *
    * @param {...any} data - The message to log.
+   * @returns {ConsoleManipulation}
    */
   debug(...data) {
-    this.#apply({ type: "debug", data, date: date().toString() });
+    return this.#write("debug", data);
   }
 
   /**
    * Logs an object.
    *
    * @param {Object} object - The object to log.
+   * @returns {ConsoleManipulation}
    */
   dir(object) {
-    this.#apply({ type: "dir", data: [object] });
+    return this.#write("log", [object]);
   }
 
   /**
    * Logs an XML object.
    *
    * @param {Object} object - The XML object to log.
+   * @returns {ConsoleManipulation}
    */
   dirxml(object) {
-    this.#apply({ type: "dirxml", data: [object] });
+    return this.#write("log", [object]);
   }
 
   /**
    * Logs an error message.
    *
    * @param {...any} data - The error message.
+   * @returns {ConsoleManipulation}
    */
   error(...data) {
-    this.#apply({
-      type: "error",
-      data,
-      color: this.#colors?.red,
-      date: date().toString(),
-    });
+    return this.#write("error", data);
   }
 
   /**
@@ -289,7 +290,7 @@ class Console {
    * @param {...any} data - The message to log for the group header.
    */
   group(...data) {
-    if (data.length) this.#apply({ type: "log", data });
+    if (data.length) this.#write("log", data);
     this.#groups++;
   }
 
@@ -299,7 +300,7 @@ class Console {
    * @param {...any} data - The message to log for the group header.
    */
   groupCollapsed(...data) {
-    if (data.length) this.#apply({ type: "log", data });
+    if (data.length) this.#write("log", data);
     this.#groups++;
   }
 
@@ -314,23 +315,20 @@ class Console {
    * Logs an information message.
    *
    * @param {...any} data - The message to log.
+   * @returns {ConsoleManipulation}
    */
   info(...data) {
-    this.#apply({
-      type: "info",
-      data,
-      color: this.#colors?.cyan,
-      date: date().toString(),
-    });
+    return this.#write("info", data);
   }
 
   /**
    * Logs a message.
    *
    * @param {...any} data - The success message.
+   * @returns {ConsoleManipulation}
    */
   log(...data) {
-    this.#apply({ type: "log", data, date: date().toString() });
+    return this.#write("log", data);
   }
 
   /**
@@ -342,7 +340,7 @@ class Console {
   profile(key, force) {
     if (!force && this.#timers[key])
       return console.warn(`${key} already exists.`);
-    this.#timers[key] = date();
+    this.#timers[key] = new DateTime();
   }
 
   /**
@@ -360,14 +358,10 @@ class Console {
    * Logs a success message.
    *
    * @param {...any} data - The success message.
+   * @returns {ConsoleManipulation}
    */
   success(...data) {
-    this.#apply({
-      type: "success",
-      data,
-      color: this.#colors?.green,
-      date: date().toString(),
-    });
+    return this.#write("success", data);
   }
 
   /**
@@ -375,17 +369,19 @@ class Console {
    *
    * @param {Array<any>} data - The data to log as a table.
    * @param {string} properties - The properties to include in the table header.
+   * @returns {ConsoleManipulation}
    */
   table(data, properties) {
-    if (!Array.isArray(data) || data.length === 0) return;
+    return this.#write("success", { data, properties });
+    /*if (!Array.isArray(data) || data.length === 0) return;
     const isObject = typeof data[0] === "object";
     const headers = [
       "(index)",
       ...(isObject ? Object.keys(data[0]) : ["Values"]),
     ];
     properties = properties || headers.join("\t");
-    this.#apply({
-      type: "log",
+    return this.#apply({
+      type: "table",
       data: [
         properties +
         "\n" +
@@ -399,7 +395,7 @@ class Console {
           )
           .join("\n"),
       ],
-    });
+    });*/
   }
 
   /**
@@ -409,9 +405,8 @@ class Console {
    * @param {boolean} [force] - Overwrites existing keys.
    */
   time(key, force) {
-    if (!force && this.#timers[key])
-      return console.warn(`${key} already exists.`);
-    this.#timers[key] = date();
+    if (!force && this.#timers[key]) return this.warn(`${key} already exists.`);
+    this.#timers[key] = new DateTime();
   }
 
   /**
@@ -431,102 +426,183 @@ class Console {
    *
    * @param {string} key - The key of the time measurement.
    * @param {...any} data - The message to log.
+   * @returns {ConsoleManipulation}
    */
   timeLog(key, ...data) {
-    if (!this.#timers[key]) return;
-    data.push(
-      `${this.#colors?.reset + this.#colors?.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
-    );
-    this.#apply({ type: "timeLog", data, date: date().toString() });
+    return this.#write("log", data, key);
   }
 
   /**
    * Logs a timestamp.
    *
    * @param {string} key - The key of the time measurement.
+   * @returns {ConsoleManipulation}
    */
   timeStamp(key) {
-    if (!this.#timers[key]) return;
-    this.#apply({
-      type: "warn",
-      data: [
-        `${key} ${this.#colors?.reset + this.#colors?.dim}(${date().diff(this.#timers[key], "second", true)}s)`,
-      ],
-      date: date().toString(),
-    });
+    return this.#write("log", [key], key);
   }
 
   /**
    * Logs a trace message.
    *
    * @param {...any} data - The message to log.
+   * @returns {ConsoleManipulation}
    */
   trace(...data) {
-    this.#apply({ type: "trace", data, date: date().toString(), trace: true });
+    return this.#write("trace", data);
   }
 
   /**
    * Logs a warning message.
    *
    * @param {...any} data - The warning message.
+   * @returns {ConsoleManipulation}
    */
   warn(...data) {
-    this.#apply({
-      type: "warn",
-      data,
-      color: this.#colors?.yellow,
-      date: date().toString(),
-    });
+    return this.#write("warn", data);
   }
 
   /**
-   * @param {Object} options
-   * @param {string} options.type
-   * @param {any[]} options.data
-   * @param {string} [options.color]
-   * @param {string} [options.date] 
-   * @param {boolean} [options.trace]
+   * Enables the whole console, the trace or debug mode.
+   * 
+   * @param {"trace" | "debug" | null} target - The target to disable.
    */
-  #apply({ type, data, color, date, trace }) {
-    if (!(data?.length > 0)) return;
-    let message = this.#date && date ? `${this.#colors?.dim || ""}[${date}]${color || this.#colors?.reset || ""} ` : (color || "");
-    message += "\t".repeat(this.#groups);
-    for (let i = 0, len = data.length; i < len; i++) {
-      const value = data[i];
-      message += (i === 0 ? "" : " ") + (typeof value === "object" ? JSON.stringify(value, duplicateReplacer(), 4) : value);
+  enable(target) {
+    switch (target) {
+      case "trace":
+        this.#trace = true;
+        break;
+      case "debug":
+        this.#debug = true;
+        break;
+      default:
+        this.#active = true;
+        break;
     }
-    if (trace || this.#trace) message += "\n" + new Error().stack.split("\n").slice(1).filter((line) => !line.includes(import.meta.url)).join("\n");
-    message += this.#colors?.reset || "";
-    const log = { type, message, data, color, date, trace };
+  }
+
+
+  /**
+   * Disables the whole console, the trace or debug mode.
+   * 
+   * @param {"trace" | "debug" | null} target - The target to disable.
+   */
+  disable(target) {
+    switch (target) {
+      case "trace":
+        this.#trace = false;
+        break;
+      case "debug":
+        this.#debug = false;
+        break;
+      default:
+        this.#active = false;
+        break;
+    }
+  }
+
+  #write(type, data, timer) {
+    if (this.#log) return Object.assign(this.#log, { type, data, timer });
+    const log = new Log(type, data, this.#groups, timer);
+    if (!log || (timer && !this.#timers[timer])) return;
     this.#logs.push(log);
-    if (this.#writer) return this.#writer.write(log);
-    if (this.#debug || !IS_TTY) return logs.push((write(log), { instance: this, index: this.#index, log }));
-    const index = findLogIndex(this.#index);
-    if (index == -1) return logs.push((write(log), { instance: this, index: this.#index, log }));
-    logs.splice(index, 0, { instance: this, index: this.#index, log });
-    clear();
-    for (let i = 0, len = logs.length; i < len; i++) write(logs[i].log);
+    if (this.#active) {
+      if (log.type === "error" && this.#stderr)
+        this.#stderr.write(
+          format(log, this.#time, this.#trace, this.#colors, this.#timers)
+        );
+      else if (this.#stdout)
+        this.#stdout.write(
+          format(log, this.#time, this.#trace, this.#colors, this.#timers)
+        );
+    }
+
+    const logs = this.#logs;
+    const options = { ["#log"]: log, trace: this.#trace, colors: this.#colors };
+    const refresh = () => {
+      if (this.#debug || !IS_TTY || !this.#active) return;
+      this.#stdclear?.();
+      for (let i = 0, len = this.#logs.length; i < len; i++) {
+        const log = this.#logs[i];
+        if (log.type === "error" && this.#stderr)
+          this.#stderr.write(
+            format(log, this.#time, this.#trace, this.#colors, this.#timers)
+          );
+        else if (this.#stdout)
+          this.#stdout.write(
+            format(log, this.#time, this.#trace, this.#colors, this.#timers)
+          );
+      }
+    };
+
+    return {
+      replace(replacer, ...data) {
+        if (typeof replacer === "function" && data.length === 0) {
+          // @ts-ignore
+          const console = new Console(options);
+          const methods = Object.getOwnPropertyNames(
+            Object.getPrototypeOf(console)
+          );
+          const actions = {};
+          for (let i = 0, len = methods.length; i < len; i++) {
+            if (
+              [
+                "constructor",
+                "clear",
+                "count",
+                "countReset",
+                "group",
+                "groupCollapsed",
+                "groupEnd",
+                "profile",
+                "profileEnd",
+                "time",
+                "timeEnd",
+                "enable",
+                "disable"
+              ].indexOf(methods[i]) !== -1
+            )
+              continue;
+            actions[methods[i]] = (...args) => console[methods[i]](...args);
+          }
+          const result = replacer(actions, log.data);
+          if (!(result instanceof Log)) log.data = result;
+        } else log.data = (data.unshift(replacer), data);
+        refresh();
+        return this;
+      },
+      remove() {
+        for (let i = 0, len = logs.length; i < len; i++) {
+          if (logs[i] !== log) continue;
+          logs.splice(i, 1);
+          refresh();
+          return;
+        }
+      },
+    };
   }
 }
 
-export default Console;
-export { Console, COLORS as colors };
+export * as COLORS from "./colors.js";
 
-function duplicateReplacer(set = new WeakSet()) {
-  return function (_, value) {
-    if (typeof value === "object" && value !== null) {
-      if (set.has(value)) {
-        return;
-      }
-      set.add(value);
-    }
-    return value;
-  };
+function format(log, displayTime, forceTrace, colors, timers) {
+  const withColor = (type, text) =>
+    (colors?.[type] || "") + text + (colors?.[type] ? colors.reset : "");
+
+  return (
+    (log.type !== "print" && displayTime
+      ? withColor("time", log.time.toString().replace(",", "") + " - ")
+      : "") +
+    withColor(log.type, log.toString()) +
+    (log.timer != null
+      ? withColor(
+          "time",
+          ` (${new DateTime().diff(timers[log.timer], "second", true)}s)`
+        )
+      : "") +
+    (log.type === "trace" || forceTrace
+      ? withColor(log.type, "\n" + log.trace.join("\n"))
+      : "") +
+    "\n"
+  );
 }
-
-function findLogIndex(index) {
-  for (let i = 0, len = logs.length; i < len; i++)
-    if (index < logs[i].index) return i;
-  return -1;
-}
-

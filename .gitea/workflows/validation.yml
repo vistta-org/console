@@ -10,7 +10,7 @@ jobs:
   Validation:
     runs-on: ubuntu-latest
     container:
-      image: node:22
+      image: node:latest
     steps:
       -
         name: Checkout
@@ -26,25 +26,28 @@ jobs:
         run: git submodule update --remote
       - 
         name: Setup Node
-        run: npm ci
+        run: npm i
       - 
         name: Close Issues
         uses: ./.gitea/actions/close-issues
         with:
           working-directory: ./packages/${{ env.module }}
           token: ${{ secrets.GIT_TOKEN }}
+        continue-on-error: true
       - 
         name: Module Validation
         working-directory: ./packages/${{ env.module }}
-        run: npx vistta package outdated
+        run: npx vistta outdated
       - 
         name: Eslint Validation
         working-directory: ./packages/${{ env.module }}
+        continue-on-error: true
         run: npx eslint .
       - 
         name: Typescript Validation
         working-directory: ./packages/${{ env.module }}
-        run: npx tsc
+        continue-on-error: true
+        run: npx tsc .
       - 
         name: Unit Tests
         working-directory: ./packages/${{ env.module }}

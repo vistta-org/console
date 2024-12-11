@@ -1,29 +1,29 @@
-import { Console, colors } from "../index.js";
+import { Console } from "../index.js";
+import * as COLORS from "../colors.js";
 
 suite("Console", () => {
   let logger;
+  console.log("here");
   test("Constructor", () => {
-    logger = new Console({
-      writer: new WritableStream({ write() { } }).getWriter(), clear() { },
-    });
+    logger = new Console({ stdout: null });
     expect(!!logger).toEqual(true);
   });
 
   test("Colors", () => {
-    expect(typeof colors.reset).toEqual("string");
-    expect(typeof colors.bright).toEqual("string");
-    expect(typeof colors.dim).toEqual("string");
-    expect(typeof colors.underscore).toEqual("string");
-    expect(typeof colors.blink).toEqual("string");
-    expect(typeof colors.reverse).toEqual("string");
-    expect(typeof colors.black).toEqual("string");
-    expect(typeof colors.red).toEqual("string");
-    expect(typeof colors.green).toEqual("string");
-    expect(typeof colors.yellow).toEqual("string");
-    expect(typeof colors.blue).toEqual("string");
-    expect(typeof colors.magenta).toEqual("string");
-    expect(typeof colors.cyan).toEqual("string");
-    expect(typeof colors.white).toEqual("string");
+    expect(typeof COLORS.RESET).toEqual("string");
+    expect(typeof COLORS.BRIGHT).toEqual("string");
+    expect(typeof COLORS.DIM).toEqual("string");
+    expect(typeof COLORS.UNDERSCORE).toEqual("string");
+    expect(typeof COLORS.BLINK).toEqual("string");
+    expect(typeof COLORS.REVERSE).toEqual("string");
+    expect(typeof COLORS.BLACK).toEqual("string");
+    expect(typeof COLORS.RED).toEqual("string");
+    expect(typeof COLORS.GREEN).toEqual("string");
+    expect(typeof COLORS.YELLOW).toEqual("string");
+    expect(typeof COLORS.BLUE).toEqual("string");
+    expect(typeof COLORS.MAGENTA).toEqual("string");
+    expect(typeof COLORS.CYAN).toEqual("string");
+    expect(typeof COLORS.WHITE).toEqual("string");
   });
 
   test("Announce", () => {
