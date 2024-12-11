@@ -33,7 +33,6 @@ jobs:
         with:
           working-directory: ./packages/${{ env.module }}
           token: ${{ secrets.GIT_TOKEN }}
-        continue-on-error: true
       - 
         name: Module Validation
         working-directory: ./packages/${{ env.module }}
@@ -41,13 +40,11 @@ jobs:
       - 
         name: Eslint Validation
         working-directory: ./packages/${{ env.module }}
-        continue-on-error: true
         run: npx eslint .
       - 
         name: Typescript Validation
         working-directory: ./packages/${{ env.module }}
-        continue-on-error: true
-        run: npx tsc .
+        run: npx tsc
       - 
         name: Unit Tests
         working-directory: ./packages/${{ env.module }}
