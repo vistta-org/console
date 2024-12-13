@@ -10,11 +10,11 @@ jobs:
   Validation:
     runs-on: ubuntu-latest
     container:
-      image: node:22
+      image: node:latest
     steps:
-      -
+      - 
         name: Checkout
-        uses: actions/checkout@v4
+        uses: tiagomta/checkout@v1
         with:
           repository: vistta/vistta
           ref: ${{ gitea.event.pull_request.head.ref }}
@@ -22,8 +22,12 @@ jobs:
           fetch-depth: 0
           submodules: true
       - 
-        name: Checkout Modules
-        run: git submodule update --remote
+        name: Close Issues
+        uses: tiagomta/gitea@v1
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
+          working-directory: ./packages/${{ env.module }}
+          command: issues close --fromCommit --milestone ${{ gitea.event.pull_request.milestone.id }}
       - 
         name: Setup Node
         run: npm ci
@@ -43,9 +47,3 @@ jobs:
         name: Unit Tests
         working-directory: ./packages/${{ env.module }}
         run: npx vistta test
-      - 
-        name: Close Issue
-        uses: ./.gitea/actions/close-issue
-        with:
-          working-directory: ./packages/${{ env.module }}
-          token: ${{ secrets.GIT_TOKEN }}
