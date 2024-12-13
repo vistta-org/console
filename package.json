@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://git.vistta.org/vistta/console.git"
+    "url": "https://github.com/vis-tta/console.git"
   },
   "scripts": {
     "postinstall": ""
@@ -20,6 +20,6 @@
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
   "dependencies": {
-    "@vistta/utils": "*"
+    "@vistta/utils": "0.1.1"
   }
 }
