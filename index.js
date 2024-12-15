@@ -1,4 +1,3 @@
-// @ts-check
 import { DateTime, BoundClass } from "@vistta/utils";
 import { toString as defaultToString } from "./modifiers/default.js";
 import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
