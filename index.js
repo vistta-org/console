@@ -3,7 +3,8 @@ import { toString as defaultToString } from "./modifiers/default.js";
 import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
 
 export const IS_TTY = typeof process === "undefined" || process?.stdout?.isTTY;
-const { execSync } = typeof process !== "undefined" && await import("node:child_process");
+const { execSync } =
+  typeof process !== "undefined" && (await import("node:child_process"));
 const CONSOLE_FALLBACK = console;
 
 /**
@@ -143,10 +144,12 @@ export class Console extends BoundClass {
       else
         throw new TypeError("Console expects a function instance for stdclear");
       if (
-        stderr && (typeof stderr === "object" && typeof stderr.write === "function")
+        stderr &&
+        typeof stderr === "object" &&
+        typeof stderr.write === "function"
       )
         this.#stderr = stderr;
-      else if(stderr)
+      else if (stderr)
         throw new TypeError(
           "Console expects a writable stream instance for stderr"
         );
@@ -462,7 +465,7 @@ export class Console extends BoundClass {
 
   /**
    * Enables the whole console, the trace or debug mode.
-   * 
+   *
    * @param {"trace" | "debug" | null} target - The target to disable.
    */
   enable(target) {
@@ -479,10 +482,9 @@ export class Console extends BoundClass {
     }
   }
 
-
   /**
    * Disables the whole console, the trace or debug mode.
-   * 
+   *
    * @param {"trace" | "debug" | null} target - The target to disable.
    */
   disable(target) {
@@ -557,7 +559,7 @@ export class Console extends BoundClass {
                 "time",
                 "timeEnd",
                 "enable",
-                "disable"
+                "disable",
               ].indexOf(methods[i]) !== -1
             )
               continue;
