@@ -16,7 +16,7 @@ jobs:
         name: Checkout
         uses: tiagomta/checkout@v1
         with:
-          repository: vistta/vistta
+          repository: vistta/workspace
           ref: ${{ gitea.event.pull_request.head.ref }}
           token: ${{ secrets.TOKEN }}
           fetch-depth: 0
@@ -25,7 +25,7 @@ jobs:
         name: Close Issues
         uses: tiagomta/gitea@v1
         with:
-          token: ${{ secrets.GIT_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           working-directory: ./packages/${{ env.module }}
           command: issues close --fromCommit --milestone ${{ gitea.event.pull_request.milestone.id }}
       - 
@@ -62,7 +62,7 @@ jobs:
         name: Snapshot Release
         uses: tiagomta/npm@v1
         with:
-          command: version snapshot --email devops@vistta.org
+          command: version snapshot $GITEA_ACTION_RUN_ID --email devops@vistta.org
       - 
         name: Publish Package (Gitea)
         uses: tiagomta/npm@v1

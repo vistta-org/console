@@ -20,6 +20,6 @@
   "author": "Tiago Terenas Almeida",
   "license": "CC BY-NC-ND 4.0 DEED",
   "dependencies": {
-    "@vistta/utils": "0.1.1"
+    "@vistta/utils": "*"
   }
 }
