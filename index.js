@@ -3,8 +3,6 @@ import { toString as defaultToString } from "./modifiers/default.js";
 import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
 
 export const IS_TTY = typeof process === "undefined" || process?.stdout?.isTTY;
-const { execSync } =
-  typeof process !== "undefined" && (await import("node:child_process"));
 const CONSOLE_FALLBACK = console;
 
 /**
@@ -129,11 +127,9 @@ export class Console extends BoundClass {
         throw new TypeError(
           "Console expects a writable stream instance for stderr"
         );
-      if (stdclear === undefined || stdclear === true) {
-        if (typeof process === "undefined" || process.platform !== "win32")
-          this.#stdclear = CONSOLE_FALLBACK.clear.bind(CONSOLE_FALLBACK);
-        else this.#stdclear = () => execSync("powershell.exe Clear-Host");
-      } else if (!stdclear || typeof stdclear === "function")
+      if (stdclear === undefined || stdclear === true)
+        this.#stdclear = CONSOLE_FALLBACK.clear.bind(CONSOLE_FALLBACK);
+      else if (!stdclear || typeof stdclear === "function")
         this.#stdclear = stdclear;
       else
         throw new TypeError("Console expects a function instance for stdclear");
