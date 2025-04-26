@@ -32,8 +32,14 @@ class Log {
     this.data = data;
     this.timer = timer;
     this.time = new DateTime({
-      dateStyle: "short",
-      timeStyle: "short",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      fractionalSecondDigits: 3,
+      hour12: false, // Use 24-hour format
     });
     this.trace = new Error().stack
       ?.split("\n")
@@ -587,7 +593,10 @@ function format(log, displayTime, forceTrace, colors, timers) {
 
   return (
     (log.type !== "print" && displayTime
-      ? withColor("time", log.time.toString().replace(",", "") + " - ")
+      ? withColor(
+          "time",
+          log.time.toString().replace(",", "").replace(",", ".") + "  "
+        )
       : "") +
     withColor(log.type, log.toString()) +
     (log.timer != null
