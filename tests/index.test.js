@@ -1,5 +1,5 @@
-import { Console } from "../index.js";
 import * as COLORS from "../colors.js";
+import { Console } from "../index.js";
 
 suite("Console", () => {
   let logger;

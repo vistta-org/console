@@ -1,6 +1,6 @@
-import { DateTime, BoundClass } from "@vistta/utils";
-import { toString as defaultToString } from "./modifiers/default.js";
+import { BoundClass, DateTime } from "@vistta/utils";
 import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
+import { toString as defaultToString } from "./modifiers/default.js";
 
 export const IS_TTY = typeof process === "undefined" || process?.stdout?.isTTY;
 const CONSOLE_FALLBACK = console;
@@ -105,21 +105,11 @@ export class Console extends BoundClass {
    * @param {Options} [options] - Optional configuration options or true for system default.
    */
   // @ts-ignore
-  constructor({
-    stdout,
-    stderr,
-    stdclear,
-    time,
-    colors,
-    trace,
-    debug,
-    ...options
-  } = {}) {
+  constructor({ stdout, stderr, stdclear, time, colors, trace, debug, ...options } = {}) {
     super();
     if (typeof options["#log"] !== "undefined") this.#log = options["#log"];
     if (stdout === undefined || stdout === true) {
-      if (typeof process === "undefined")
-        this.#stdout = { write: (...args) => CONSOLE_FALLBACK.log(...args) };
+      if (typeof process === "undefined") this.#stdout = { write: (...args) => CONSOLE_FALLBACK.log(...args) };
       else this.#stdout = process.stdout;
       if (stderr === true) {
         if (typeof process === "undefined")
@@ -127,38 +117,18 @@ export class Console extends BoundClass {
             write: (...args) => CONSOLE_FALLBACK.error(...args),
           };
         else this.#stderr = process.stderr;
-      } else if (!stderr || typeof stderr.write === "function")
-        this.#stderr = stderr;
-      else
-        throw new TypeError(
-          "Console expects a writable stream instance for stderr"
-        );
-      if (stdclear === undefined || stdclear === true)
-        this.#stdclear = CONSOLE_FALLBACK.clear.bind(CONSOLE_FALLBACK);
-      else if (!stdclear || typeof stdclear === "function")
-        this.#stdclear = stdclear;
-      else
-        throw new TypeError("Console expects a function instance for stdclear");
+      } else if (!stderr || typeof stderr.write === "function") this.#stderr = stderr;
+      else throw new TypeError("Console expects a writable stream instance for stderr");
+      if (stdclear === undefined || stdclear === true) this.#stdclear = CONSOLE_FALLBACK.clear.bind(CONSOLE_FALLBACK);
+      else if (!stdclear || typeof stdclear === "function") this.#stdclear = stdclear;
+      else throw new TypeError("Console expects a function instance for stdclear");
     } else if (!stdout || typeof stdout.write === "function") {
       this.#stdout = stdout;
-      if (!stdclear || typeof stdclear === "function")
-        this.#stdclear = stdclear;
-      else
-        throw new TypeError("Console expects a function instance for stdclear");
-      if (
-        stderr &&
-        typeof stderr === "object" &&
-        typeof stderr.write === "function"
-      )
-        this.#stderr = stderr;
-      else if (stderr)
-        throw new TypeError(
-          "Console expects a writable stream instance for stderr"
-        );
-    } else
-      throw new TypeError(
-        "Console expects a writable stream instance for stdout"
-      );
+      if (!stdclear || typeof stdclear === "function") this.#stdclear = stdclear;
+      else throw new TypeError("Console expects a function instance for stdclear");
+      if (stderr && typeof stderr === "object" && typeof stderr.write === "function") this.#stderr = stderr;
+      else if (stderr) throw new TypeError("Console expects a writable stream instance for stderr");
+    } else throw new TypeError("Console expects a writable stream instance for stdout");
     this.#time = time !== false;
     this.#debug = debug ?? process?.env?.NODE_DEBUG;
     this.#trace = trace ?? process?.env?.NODE_TRACE;
@@ -191,14 +161,8 @@ export class Console extends BoundClass {
    * @returns {ConsoleManipulation}
    */
   assert(condition, ...data) {
-    if (condition)
-      data.unshift(
-        `${this.#colors?.success || ""}Assertion passed${this.#colors?.success ? this.#colors.reset : ""}`
-      );
-    else
-      data.unshift(
-        `${this.#colors?.error}Assertion failed${this.#colors?.error ? this.#colors.reset : ""}`
-      );
+    if (condition) data.unshift(`${this.#colors?.success || ""}Assertion passed${this.#colors?.success ? this.#colors.reset : ""}`);
+    else data.unshift(`${this.#colors?.error}Assertion failed${this.#colors?.error ? this.#colors.reset : ""}`);
     return this.#write("log", data);
   }
 
@@ -341,8 +305,7 @@ export class Console extends BoundClass {
    * @param {boolean} [force] - Overwrites existing keys.
    */
   profile(key, force) {
-    if (!force && this.#timers[key])
-      return console.warn(`${key} already exists.`);
+    if (!force && this.#timers[key]) return console.warn(`${key} already exists.`);
     this.#timers[key] = new DateTime();
   }
 
@@ -509,14 +472,8 @@ export class Console extends BoundClass {
     if (!log || (timer && !this.#timers[timer])) return;
     this.#logs.push(log);
     if (this.#active) {
-      if (log.type === "error" && this.#stderr)
-        this.#stderr.write(
-          format(log, this.#time, this.#trace, this.#colors, this.#timers)
-        );
-      else if (this.#stdout)
-        this.#stdout.write(
-          format(log, this.#time, this.#trace, this.#colors, this.#timers)
-        );
+      if (log.type === "error" && this.#stderr) this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
+      else if (this.#stdout) this.#stdout.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
     }
 
     const logs = this.#logs;
@@ -526,14 +483,8 @@ export class Console extends BoundClass {
       this.#stdclear?.();
       for (let i = 0, len = this.#logs.length; i < len; i++) {
         const log = this.#logs[i];
-        if (log.type === "error" && this.#stderr)
-          this.#stderr.write(
-            format(log, this.#time, this.#trace, this.#colors, this.#timers)
-          );
-        else if (this.#stdout)
-          this.#stdout.write(
-            format(log, this.#time, this.#trace, this.#colors, this.#timers)
-          );
+        if (log.type === "error" && this.#stderr) this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
+        else if (this.#stdout) this.#stdout.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
       }
     };
 
@@ -542,9 +493,7 @@ export class Console extends BoundClass {
         if (typeof replacer === "function" && data.length === 0) {
           // @ts-ignore
           const console = new Console(options);
-          const methods = Object.getOwnPropertyNames(
-            Object.getPrototypeOf(console)
-          );
+          const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(console));
           const actions = {};
           for (let i = 0, len = methods.length; i < len; i++) {
             if (
@@ -588,26 +537,13 @@ export class Console extends BoundClass {
 export * as COLORS from "./colors.js";
 
 function format(log, displayTime, forceTrace, colors, timers) {
-  const withColor = (type, text) =>
-    (colors?.[type] || "") + text + (colors?.[type] ? colors.reset : "");
+  const withColor = (type, text) => (colors?.[type] || "") + text + (colors?.[type] ? colors.reset : "");
 
   return (
-    (log.type !== "print" && displayTime
-      ? withColor(
-          "time",
-          log.time.toString().replace(",", "").replace(",", ".") + "  "
-        )
-      : "") +
+    (log.type !== "print" && displayTime ? withColor("time", log.time.toString().replace(",", "").replace(",", ".") + "  ") : "") +
     withColor(log.type, log.toString()) +
-    (log.timer != null
-      ? withColor(
-          "time",
-          ` (${new DateTime().diff(timers[log.timer], "second", true)}s)`
-        )
-      : "") +
-    (log.type === "trace" || forceTrace
-      ? withColor(log.type, "\n" + log.trace.join("\n"))
-      : "") +
+    (log.timer != null ? withColor("time", ` (${new DateTime().diff(timers[log.timer], "second", true)}s)`) : "") +
+    (log.type === "trace" || forceTrace ? withColor(log.type, "\n" + log.trace.join("\n")) : "") +
     "\n"
   );
 }
