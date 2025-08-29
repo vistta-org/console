@@ -161,7 +161,8 @@ export class Console extends BoundClass {
    * @returns {ConsoleManipulation}
    */
   assert(condition, ...data) {
-    if (condition) data.unshift(`${this.#colors?.success || ""}Assertion passed${this.#colors?.success ? this.#colors.reset : ""}`);
+    if (condition)
+      data.unshift(`${this.#colors?.success || ""}Assertion passed${this.#colors?.success ? this.#colors.reset : ""}`);
     else data.unshift(`${this.#colors?.error}Assertion failed${this.#colors?.error ? this.#colors.reset : ""}`);
     return this.#write("log", data);
   }
@@ -472,7 +473,8 @@ export class Console extends BoundClass {
     if (!log || (timer && !this.#timers[timer])) return;
     this.#logs.push(log);
     if (this.#active) {
-      if (log.type === "error" && this.#stderr) this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
+      if (log.type === "error" && this.#stderr)
+        this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
       else if (this.#stdout) this.#stdout.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
     }
 
@@ -483,7 +485,8 @@ export class Console extends BoundClass {
       this.#stdclear?.();
       for (let i = 0, len = this.#logs.length; i < len; i++) {
         const log = this.#logs[i];
-        if (log.type === "error" && this.#stderr) this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
+        if (log.type === "error" && this.#stderr)
+          this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
         else if (this.#stdout) this.#stdout.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
       }
     };
@@ -540,7 +543,9 @@ function format(log, displayTime, forceTrace, colors, timers) {
   const withColor = (type, text) => (colors?.[type] || "") + text + (colors?.[type] ? colors.reset : "");
 
   return (
-    (log.type !== "print" && displayTime ? withColor("time", log.time.toString().replace(",", "").replace(",", ".") + "  ") : "") +
+    (log.type !== "print" && displayTime
+      ? withColor("time", log.time.toString().replace(",", "").replace(",", ".") + "  ")
+      : "") +
     withColor(log.type, log.toString()) +
     (log.timer != null ? withColor("time", ` (${new DateTime().diff(timers[log.timer], "second", true)}s)`) : "") +
     (log.type === "trace" || forceTrace ? withColor(log.type, "\n" + log.trace.join("\n")) : "") +
