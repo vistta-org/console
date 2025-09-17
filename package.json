@@ -1,6 +1,6 @@
 {
   "name": "@vistta/console",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Vistta Console Library",
   "main": "index.js",
   "types": "global.d.ts",
