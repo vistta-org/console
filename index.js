@@ -1,4 +1,4 @@
-import { BoundClass, DateTime } from "@vistta/utils";
+import { BoundClass, DateTime, clone } from "@vistta/utils";
 import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
 import { toString as defaultToString } from "./modifiers/default.js";
 
@@ -25,12 +25,36 @@ const defaultColors = {
   announce: BRIGHT,
 };
 
+/**
+ * @typedef {"announce" | "print" | "debug" | "error" | "info" | "log" | "success" | "trace" | "warn"} LogType
+ */
+
+/**
+ * @typedef {Object} LogEntry
+ * @property {LogType} type - Log type.
+ * @property {any[]} data - Log payload.
+ * @property {string | undefined} timer - Related timer key.
+ * @property {DateTime} time - Timestamp.
+ * @property {string[]} trace - Stack trace lines.
+ * @property {number | undefined} group - Group nesting level.
+ */
+
 class Log {
+  /**
+   * @param {LogType} type - The log type.
+   * @param {any[]} [data] - Log data.
+   * @param {number} [group] - Group depth for this entry.
+   * @param {string} [timer] - Timer key associated with this entry.
+   */
   constructor(type, data, group, timer) {
     if (!(data?.length > 0)) data = [""];
+    /** @type {LogType} */
     this.type = type;
+    /** @type {any[]} */
     this.data = data;
+    /** @type {string | undefined} */
     this.timer = timer;
+    /** @type {DateTime} */
     this.time = new DateTime({
       day: "2-digit",
       month: "2-digit",
@@ -41,13 +65,18 @@ class Log {
       fractionalSecondDigits: 3,
       hour12: false, // Use 24-hour format
     });
+    /** @type {string[]} */
     this.trace = new Error().stack
       ?.split("\n")
       ?.slice(1)
       ?.filter((line) => !line.includes(import.meta.url));
+    /** @type {number | undefined} */
     if (group) this.group = group;
   }
 
+  /**
+   * @returns {string}
+   */
   toString() {
     switch (this.type) {
       default:
@@ -84,10 +113,10 @@ export class Console extends BoundClass {
   }
 
   /**
-   * @returns {string[]} Console instance logs
+   * @returns {LogEntry[]} Console instance logs
    */
   get logs() {
-    return this.#logs;
+    return clone(this.#logs);
   }
 
   /**
@@ -432,7 +461,7 @@ export class Console extends BoundClass {
   /**
    * Enables the whole console, the trace or debug mode.
    *
-   * @param {"trace" | "debug" | null} target - The target to disable.
+    * @param {"trace" | "debug" | null} [target] - The target to disable.
    */
   enable(target) {
     switch (target) {
@@ -451,7 +480,7 @@ export class Console extends BoundClass {
   /**
    * Disables the whole console, the trace or debug mode.
    *
-   * @param {"trace" | "debug" | null} target - The target to disable.
+    * @param {"trace" | "debug" | null} [target] - The target to disable.
    */
   disable(target) {
     switch (target) {
