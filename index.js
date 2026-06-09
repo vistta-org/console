@@ -1,4 +1,4 @@
-import { BoundClass, DateTime, clone } from "@vistta/utils";
+import { BoundClass, DateTime } from "@vistta/utils";
 import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
 import { toString as defaultToString } from "./modifiers/default.js";
 
@@ -29,59 +29,86 @@ const defaultColors = {
  * @typedef {"announce" | "print" | "debug" | "error" | "info" | "log" | "success" | "trace" | "warn"} LogType
  */
 
-/**
- * @typedef {Object} LogEntry
- * @property {LogType} type - Log type.
- * @property {any[]} data - Log payload.
- * @property {string | undefined} timer - Related timer key.
- * @property {DateTime} time - Timestamp.
- * @property {string[]} trace - Stack trace lines.
- * @property {number | undefined} group - Group nesting level.
- */
-
 class Log {
+  /** @type {LogType} */
+  type;
+  /** @type {any[]} */
+  data;
+  /** @type {number | undefined} */
+  timer;
+  /** @type {DateTime} */
+  time;
+  /** @type {string[]} */
+  trace;
+  /** @type {number | undefined} */
+  group;
+
   /**
    * @param {LogType} type - The log type.
    * @param {any[]} [data] - Log data.
-   * @param {number} [group] - Group depth for this entry.
-   * @param {string} [timer] - Timer key associated with this entry.
+   * @param {Object} [options] - Additional options for the log entry.
+   * @param {number} [options.group] - Group depth for this entry.
+   * @param {DateTime} [options.time] - Custom time for the log entry.
+   * @param {string[]} [options.trace] - Custom stack trace for the log entry.
+   * @param {number} [options.timer] - Timer key associated with this entry.
    */
-  constructor(type, data, group, timer) {
+  constructor(type, data, { group, timer, time, trace } = {}) {
     if (!(data?.length > 0)) data = [""];
     /** @type {LogType} */
     this.type = type;
     /** @type {any[]} */
     this.data = data;
-    /** @type {string | undefined} */
+    /** @type {number | undefined} */
     this.timer = timer;
     /** @type {DateTime} */
-    this.time = new DateTime({
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      fractionalSecondDigits: 3,
-      hour12: false, // Use 24-hour format
-    });
+    this.time = new DateTime(
+      time || {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+        hour12: false, // Use 24-hour format
+      },
+    );
     /** @type {string[]} */
-    this.trace = new Error().stack
-      ?.split("\n")
-      ?.slice(1)
-      ?.filter((line) => !line.includes(import.meta.url));
+    this.trace =
+      trace ||
+      new Error().stack
+        ?.split("\n")
+        ?.slice(1)
+        ?.filter((line) => !line.includes(import.meta.url));
     /** @type {number | undefined} */
     if (group) this.group = group;
   }
 
   /**
+   * Formats the log entry as a string.
+   *
+   * @param {Object} options - Formatting options.
+   * @param {boolean} [options.time] - Whether to include the time in the output. Defaults to true.
+   * @param {boolean} [options.trace] - Whether to include the stack trace in the output. Defaults to true.
+   * @param {Colors} [options.colors] - An object containing color codes for different log types.
+   * @param {Object} [options.timers] - An object containing timer start times for calculating elapsed time.
    * @returns {string}
    */
-  toString() {
-    switch (this.type) {
-      default:
-        return defaultToString(this.data);
-    }
+  toString({ time = true, trace = true, colors } = {}) {
+    const withColor = (type, text) => (colors?.[type] || "") + text + (colors?.[type] ? colors?.reset : "");
+    return (
+      (this.type !== "print" && time
+        ? withColor("time", this.time.toString().replace(",", "").replace(",", ".") + "  ")
+        : "") +
+      withColor(this.type, defaultToString(this.data)) +
+      (this.timer != null ? withColor("time", ` (${this.timer}s)`) : "") +
+      (this.type === "trace" || trace ? withColor(this.type, "\n" + this.trace.join("\n")) : "") +
+      "\n"
+    );
+  }
+
+  clone() {
+    return new Log(this.type, this.data, { group: this.group, timer: this.timer, time: this.time, trace: this.trace });
   }
 }
 
@@ -113,10 +140,10 @@ export class Console extends BoundClass {
   }
 
   /**
-   * @returns {LogEntry[]} Console instance logs
+   * @returns {Log[]} Console instance logs
    */
   get logs() {
-    return clone(this.#logs);
+    return this.#logs.map((log) => log.clone());
   }
 
   /**
@@ -461,7 +488,7 @@ export class Console extends BoundClass {
   /**
    * Enables the whole console, the trace or debug mode.
    *
-    * @param {"trace" | "debug" | null} [target] - The target to disable.
+   * @param {"trace" | "debug" | null} [target] - The target to disable.
    */
   enable(target) {
     switch (target) {
@@ -480,7 +507,7 @@ export class Console extends BoundClass {
   /**
    * Disables the whole console, the trace or debug mode.
    *
-    * @param {"trace" | "debug" | null} [target] - The target to disable.
+   * @param {"trace" | "debug" | null} [target] - The target to disable.
    */
   disable(target) {
     switch (target) {
@@ -497,14 +524,32 @@ export class Console extends BoundClass {
   }
 
   #write(type, data, timer) {
+    if (timer && this.#timers[timer]) timer = new DateTime().diff(this.#timers[timer], "second", true);
     if (this.#log) return Object.assign(this.#log, { type, data, timer });
-    const log = new Log(type, data, this.#groups, timer);
-    if (!log || (timer && !this.#timers[timer])) return;
+    const log = new Log(type, data, {
+      group: this.#groups,
+      timer: timer,
+    });
     this.#logs.push(log);
     if (this.#active) {
       if (log.type === "error" && this.#stderr)
-        this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
-      else if (this.#stdout) this.#stdout.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
+        this.#stderr.write(
+          log.toString({
+            time: this.#time,
+            trace: !!this.#trace,
+            colors: /** @type {any} */ (this.#colors),
+            timers: this.#timers,
+          }),
+        );
+      else if (this.#stdout)
+        this.#stdout.write(
+          log.toString({
+            time: this.#time,
+            trace: !!this.#trace,
+            colors: /** @type {any} */ (this.#colors),
+            timers: this.#timers,
+          }),
+        );
     }
 
     const logs = this.#logs;
@@ -515,8 +560,23 @@ export class Console extends BoundClass {
       for (let i = 0, len = this.#logs.length; i < len; i++) {
         const log = this.#logs[i];
         if (log.type === "error" && this.#stderr)
-          this.#stderr.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
-        else if (this.#stdout) this.#stdout.write(format(log, this.#time, this.#trace, this.#colors, this.#timers));
+          this.#stderr.write(
+            log.toString({
+              time: this.#time,
+              trace: !!this.#trace,
+              colors: /** @type {any} */ (this.#colors),
+              timers: this.#timers,
+            }),
+          );
+        else if (this.#stdout)
+          this.#stdout.write(
+            log.toString({
+              time: this.#time,
+              trace: !!this.#trace,
+              colors: /** @type {any} */ (this.#colors),
+              timers: this.#timers,
+            }),
+          );
       }
     };
 
@@ -567,17 +627,3 @@ export class Console extends BoundClass {
 }
 
 export * as COLORS from "./colors.js";
-
-function format(log, displayTime, forceTrace, colors, timers) {
-  const withColor = (type, text) => (colors?.[type] || "") + text + (colors?.[type] ? colors.reset : "");
-
-  return (
-    (log.type !== "print" && displayTime
-      ? withColor("time", log.time.toString().replace(",", "").replace(",", ".") + "  ")
-      : "") +
-    withColor(log.type, log.toString()) +
-    (log.timer != null ? withColor("time", ` (${new DateTime().diff(timers[log.timer], "second", true)}s)`) : "") +
-    (log.type === "trace" || forceTrace ? withColor(log.type, "\n" + log.trace.join("\n")) : "") +
-    "\n"
-  );
-}
