@@ -1,9 +1,215 @@
 import { BoundClass, DateTime } from "@vistta/utils";
 import { BRIGHT, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./colors.js";
-import { toString as defaultToString } from "./modifiers/default.js";
+import { toString as defaultToString, table as formatTable } from "./modifiers/default.js";
 
 export const IS_TTY = typeof process === "undefined" || process?.stdout?.isTTY;
 const CONSOLE_FALLBACK = console;
+/** @type {OutputStream} */
+const FALLBACK_STDOUT = { write: (text) => CONSOLE_FALLBACK.log(text) };
+/** @type {OutputStream} */
+const FALLBACK_STDERR = { write: (text) => CONSOLE_FALLBACK.error(text) };
+const TERMINAL = {};
+let outputSequence = 0;
+
+/**
+ * @typedef {{
+ *   write: (text: string, callback?: (error?: Error | null) => void) => unknown,
+ *   isTTY?: boolean,
+ *   ready?: PromiseLike<unknown>,
+ *   once?: (event: string, listener: (...args: any[]) => void) => unknown,
+ *   removeListener?: (event: string, listener: (...args: any[]) => void) => unknown
+ * }} OutputStream
+ * @typedef {{ sequence: number, log: Log, stream: OutputStream, render: () => string }} OutputEntry
+ */
+
+/**
+ * @param {unknown} value
+ * @returns {value is PromiseLike<unknown>}
+ */
+function isPromise(value) {
+  return (
+    value !== null &&
+    (typeof value === "object" || typeof value === "function") &&
+    "then" in value &&
+    typeof value.then === "function"
+  );
+}
+
+/**
+ * @param {OutputStream} stream
+ * @param {string} text
+ */
+function writeStream(stream, text) {
+  if (stream.ready) return Promise.resolve(stream.ready).then(() => stream.write(text));
+  if (stream.once && stream.removeListener) {
+    let resolveWrite;
+    let rejectWrite;
+    const pending = new Promise((resolve, reject) => {
+      resolveWrite = () => resolve(undefined);
+      rejectWrite = reject;
+    });
+    let completed = false;
+    let drained = false;
+    let returned = false;
+    const cleanup = () => {
+      stream.removeListener("error", fail);
+      stream.removeListener("close", close);
+      stream.removeListener("drain", drain);
+    };
+    const finish = () => {
+      if (!returned || !completed || !drained) return;
+      cleanup();
+      resolveWrite();
+    };
+    const fail = (error) => {
+      cleanup();
+      rejectWrite(error);
+    };
+    const close = () => fail(new Error("Console output stream closed before the write completed"));
+    const drain = () => {
+      drained = true;
+      finish();
+    };
+    stream.once("error", fail);
+    stream.once("close", close);
+    stream.once("drain", drain);
+    try {
+      const result = stream.write(text, (error) => {
+        if (error) {
+          // Node emits the error event after invoking the write callback.
+          stream.removeListener("drain", drain);
+          rejectWrite(error);
+          return;
+        }
+        completed = true;
+        finish();
+      });
+      if (result !== false) drained = true;
+      returned = true;
+      finish();
+    } catch (error) {
+      cleanup();
+      throw error;
+    }
+    return pending;
+  }
+  const result = stream.write(text);
+  if (result === false) throw new TypeError("Console output returning false must support drain events");
+  return result;
+}
+
+class Output {
+  /** @type {OutputEntry[]} */
+  entries = [];
+  /** @type {Function | undefined} */
+  clear;
+  /** @type {boolean} */
+  isTTY;
+  /** @type {Promise<void> | undefined} */
+  #pending;
+  #failed = false;
+  #error;
+
+  /** @param {boolean} isTTY */
+  constructor(isTTY) {
+    this.isTTY = isTTY;
+  }
+
+  /**
+   * @param {Log} log
+   * @param {OutputStream} stream
+   * @param {() => string} render
+   */
+  write(log, stream, render) {
+    const text = render();
+    this.#enqueue(() => writeStream(stream, text));
+    const entry = { sequence: outputSequence++, log, stream, render };
+    this.entries.push(entry);
+    return entry;
+  }
+
+  /** @param {OutputEntry} entry */
+  add(entry) {
+    const index = this.entries.findIndex((current) => current.sequence > entry.sequence);
+    this.entries.splice(index === -1 ? this.entries.length : index, 0, entry);
+  }
+
+  /** @param {Log[]} logs */
+  remove(logs) {
+    this.entries = this.entries.filter((entry) => !logs.includes(entry.log));
+  }
+
+  refresh() {
+    if (!this.isTTY || !this.clear) return;
+    const entries = this.entries.map((entry) => ({ stream: entry.stream, text: entry.render() }));
+    this.#enqueue(() => this.clear());
+    for (const entry of entries) this.#enqueue(() => writeStream(entry.stream, entry.text));
+  }
+
+  async flush() {
+    while (this.#pending) await this.#pending;
+    if (this.#failed) throw this.#error;
+  }
+
+  /** @param {() => unknown} action */
+  #enqueue(action) {
+    if (this.#failed) throw this.#error;
+    let result;
+    if (this.#pending) {
+      result = this.#pending.then(() => {
+        if (this.#failed) throw this.#error;
+        return action();
+      });
+    } else {
+      try {
+        result = action();
+      } catch (error) {
+        this.#failed = true;
+        this.#error = error;
+        throw error;
+      }
+    }
+    if (!isPromise(result)) return;
+    const pending = Promise.resolve(result).then(
+      () => {},
+      (error) => {
+        if (this.#failed) return;
+        this.#failed = true;
+        this.#error = error;
+        CONSOLE_FALLBACK.error("Console output failed:", error);
+      },
+    );
+    this.#pending = pending;
+    pending.then(() => {
+      if (this.#pending === pending) this.#pending = undefined;
+    });
+  }
+}
+
+/** @type {WeakMap<object, Output>} */
+const OUTPUTS = new WeakMap();
+
+/**
+ * @param {OutputStream} stream
+ * @param {Function | boolean | null | undefined} clear
+ */
+function getOutput(stream, clear) {
+  const isTTY = stream.isTTY === true;
+  const key =
+    typeof process !== "undefined" &&
+    process.stdout?.isTTY === true &&
+    process.stderr?.isTTY === true &&
+    (stream === process.stdout || stream === process.stderr)
+      ? TERMINAL
+      : stream;
+  let output = OUTPUTS.get(key);
+  if (!output) {
+    output = new Output(isTTY);
+    OUTPUTS.set(key, output);
+  }
+  if (!output.clear && typeof clear === "function") output.clear = clear;
+  return output;
+}
 
 /**
  * @typedef {Object} Colors
@@ -24,6 +230,7 @@ const defaultColors = {
   info: CYAN,
   announce: BRIGHT,
 };
+const NO_COLORS = { reset: "" };
 
 /**
  * @typedef {"announce" | "print" | "debug" | "error" | "info" | "log" | "success" | "trace" | "warn"} LogType
@@ -74,12 +281,7 @@ class Log {
       },
     );
     /** @type {string[]} */
-    this.trace =
-      trace ||
-      new Error().stack
-        ?.split("\n")
-        ?.slice(1)
-        ?.filter((line) => !line.includes(import.meta.url));
+    this.trace = trace || [];
     /** @type {number | undefined} */
     if (group) this.group = group;
   }
@@ -96,14 +298,19 @@ class Log {
    */
   toString({ time = true, trace = true, colors } = {}) {
     const withColor = (type, text) => (colors?.[type] || "") + text + (colors?.[type] ? colors?.reset : "");
-    return (
+    const text =
       (this.type !== "print" && time
         ? withColor("time", this.time.toString().replace(",", "").replace(",", ".") + "  ")
         : "") +
       withColor(this.type, defaultToString(this.data)) +
       (this.timer != null ? withColor("time", ` (${this.timer}s)`) : "") +
-      (this.type === "trace" || trace ? withColor(this.type, "\n" + this.trace.join("\n")) : "") +
-      "\n"
+      ((this.type === "trace" || trace) && this.trace.length ? withColor(this.type, "\n" + this.trace.join("\n")) : "");
+    const indent = "  ".repeat(this.group || 0);
+    return (
+      text
+        .split("\n")
+        .map((line) => indent + line)
+        .join("\n") + "\n"
     );
   }
 
@@ -127,10 +334,15 @@ export class Console extends BoundClass {
   #stdout;
   #stderr;
   #stdclear;
+  /** @type {Output | undefined} */
+  #out;
+  /** @type {Output | undefined} */
+  #err;
   #time;
   #colors;
   #debug;
   #trace;
+  #maxHistory;
 
   /**
    * @returns {typeof Console} Console Instance Class.
@@ -150,28 +362,29 @@ export class Console extends BoundClass {
    * Creates a new Console instance.
    *
    * @typedef {Object} Options
-   * @property {WritableStreamDefaultWriter | boolean} [stdout] - Writable Out Stream.
-   * @property {WritableStreamDefaultWriter | boolean} [stderr] - Writable Error Stream. Defaults to stdout.
+   * @property {OutputStream | boolean | null} [stdout] - Writable Out Stream.
+   * @property {OutputStream | boolean | null} [stderr] - Writable Error Stream. Defaults to stdout.
    * @property {Function | boolean} [stdclear] - Function to clear the Stream if available.
    * @property {boolean} [time] - Whether to include the time in logs. Defaults to true.
-   * @property {boolean | Colors} [colors] - Whether to include colors in logs or object of the colors. Defaults to true if no writer is passed.
+   * @property {boolean | Colors} [colors] - Color override. By default colors are enabled only for TTY destinations.
    * @property {boolean} [trace] - Whether to include the stack trace in logs. Defaults to the value of the `NODE_TRACE` environment variable.
    * @property {boolean} [debug] - Whether to enable debug mode. Defaults to the value of the `NODE_DEBUG` environment variable.
+   * @property {number} [maxHistory] - Maximum retained entries per logger. Defaults to Infinity; zero disables history.
    *
    * @param {Options} [options] - Optional configuration options or true for system default.
    */
   // @ts-ignore
-  constructor({ stdout, stderr, stdclear, time, colors, trace, debug, ...options } = {}) {
+  constructor({ stdout, stderr, stdclear, time, colors, trace, debug, maxHistory = Infinity, ...options } = {}) {
     super();
+    if (maxHistory !== Infinity && (!Number.isInteger(maxHistory) || maxHistory < 0))
+      throw new RangeError("Console maxHistory must be a non-negative integer or Infinity");
+    this.#maxHistory = maxHistory;
     if (typeof options["#log"] !== "undefined") this.#log = options["#log"];
     if (stdout === undefined || stdout === true) {
-      if (typeof process === "undefined") this.#stdout = { write: (...args) => CONSOLE_FALLBACK.log(...args) };
+      if (typeof process === "undefined") this.#stdout = FALLBACK_STDOUT;
       else this.#stdout = process.stdout;
       if (stderr === true) {
-        if (typeof process === "undefined")
-          this.#stderr = {
-            write: (...args) => CONSOLE_FALLBACK.error(...args),
-          };
+        if (typeof process === "undefined") this.#stderr = FALLBACK_STDERR;
         else this.#stderr = process.stderr;
       } else if (!stderr || typeof stderr.write === "function") this.#stderr = stderr;
       else throw new TypeError("Console expects a writable stream instance for stderr");
@@ -186,11 +399,15 @@ export class Console extends BoundClass {
       else if (stderr) throw new TypeError("Console expects a writable stream instance for stderr");
     } else throw new TypeError("Console expects a writable stream instance for stdout");
     this.#time = time !== false;
-    this.#debug = debug ?? process?.env?.NODE_DEBUG;
-    this.#trace = trace ?? process?.env?.NODE_TRACE;
+    this.#debug = debug ?? (typeof process !== "undefined" ? process.env?.NODE_DEBUG : undefined);
+    this.#trace = trace ?? (typeof process !== "undefined" ? process.env?.NODE_TRACE : undefined);
     if (colors === true) this.#colors = defaultColors;
-    else if (colors === false) this.#colors = {};
-    else this.#colors = colors || defaultColors;
+    else if (colors === false) this.#colors = NO_COLORS;
+    else this.#colors = colors;
+    if (!this.#log) {
+      if (this.#stdout) this.#out = getOutput(this.#stdout, this.#stdclear);
+      if (this.#stderr) this.#err = getOutput(this.#stderr, this.#stdclear);
+    }
   }
 
   /**
@@ -214,22 +431,30 @@ export class Console extends BoundClass {
    *
    * @param {boolean} condition - The condition to assert.
    * @param {...any} data - The message to log if the condition fails.
-   * @returns {ConsoleManipulation}
+   * @returns {ConsoleManipulation | undefined}
    */
   assert(condition, ...data) {
-    if (condition)
-      data.unshift(`${this.#colors?.success || ""}Assertion passed${this.#colors?.success ? this.#colors.reset : ""}`);
-    else data.unshift(`${this.#colors?.error}Assertion failed${this.#colors?.error ? this.#colors.reset : ""}`);
-    return this.#write("log", data);
+    if (condition) return;
+    return this.#write("error", ["Assertion failed", ...data]);
   }
 
   /**
    * Clears the console.
    */
   clear() {
-    this.#logs = [];
-    if (this.#debug || !IS_TTY) return;
-    this.#stdclear?.();
+    for (const output of new Set([this.#out, this.#err])) {
+      output?.remove(this.#logs);
+      if (!this.#debug && this.#active) output?.refresh();
+    }
+    this.#logs.length = 0;
+  }
+
+  /**
+   * Waits for queued writes and redraws on both shared output owners.
+   * @returns {Promise<void>}
+   */
+  async flush() {
+    await Promise.all([...new Set([this.#out, this.#err])].map((output) => output?.flush()));
   }
 
   /**
@@ -239,7 +464,7 @@ export class Console extends BoundClass {
    */
   count(key = "") {
     if (!this.#counts[key]) this.#counts[key] = 0;
-    this.#write("log", [`${key}: ${this.#counts[key]++}`]);
+    this.#write("log", [`${key}: ${++this.#counts[key]}`]);
   }
 
   /**
@@ -390,35 +615,12 @@ export class Console extends BoundClass {
   /**
    * Logs a table.
    *
-   * @param {Array<any>} data - The data to log as a table.
-   * @param {string} properties - The properties to include in the table header.
+   * @param {any} data - Array or object to log as a table; other values are logged normally.
+   * @param {string[]} [properties] - Object properties to include in the table.
    * @returns {ConsoleManipulation}
    */
   table(data, properties) {
-    return this.#write("success", { data, properties });
-    /*if (!Array.isArray(data) || data.length === 0) return;
-    const isObject = typeof data[0] === "object";
-    const headers = [
-      "(index)",
-      ...(isObject ? Object.keys(data[0]) : ["Values"]),
-    ];
-    properties = properties || headers.join("\t");
-    return this.#apply({
-      type: "table",
-      data: [
-        properties +
-        "\n" +
-        data
-          .map((obj, index) =>
-            !isObject
-              ? index + "\t" + obj
-              : headers
-                .map((key) => (key === "(index)" ? index : obj[key]))
-                .join("\t"),
-          )
-          .join("\n"),
-      ],
-    });*/
+    return this.#write("log", [formatTable(data, properties)]);
   }
 
   /**
@@ -525,63 +727,60 @@ export class Console extends BoundClass {
 
   #write(type, data, timer) {
     if (timer && this.#timers[timer]) timer = new DateTime().diff(this.#timers[timer], "second", true);
-    if (this.#log) return Object.assign(this.#log, { type, data, timer });
+    const trace =
+      this.#trace || type === "trace"
+        ? new Error().stack
+            ?.split("\n")
+            .slice(1)
+            .filter((line) => !line.includes(import.meta.url)) || []
+        : [];
+    if (this.#log) return Object.assign(this.#log, { type, data, timer, trace });
     const log = new Log(type, data, {
       group: this.#groups,
       timer: timer,
+      trace,
     });
     this.#logs.push(log);
-    if (this.#active) {
-      if (log.type === "error" && this.#stderr)
-        this.#stderr.write(
-          log.toString({
-            time: this.#time,
-            trace: !!this.#trace,
-            colors: /** @type {any} */ (this.#colors),
-            timers: this.#timers,
-          }),
-        );
-      else if (this.#stdout)
-        this.#stdout.write(
-          log.toString({
-            time: this.#time,
-            trace: !!this.#trace,
-            colors: /** @type {any} */ (this.#colors),
-            timers: this.#timers,
-          }),
-        );
+    const stream = log.type === "error" && this.#stderr ? this.#stderr : this.#stdout;
+    let output = log.type === "error" && this.#stderr ? this.#err : this.#out;
+    /** @type {OutputEntry | undefined} */
+    let entry;
+    if (this.#active && stream && output) {
+      entry = output.write(log, stream, () =>
+        log.toString({
+          time: this.#time,
+          trace: !!this.#trace,
+          colors: this.#colors ?? ((entry?.stream ?? stream).isTTY === true ? defaultColors : NO_COLORS),
+        }),
+      );
+    }
+    if (this.#logs.length > this.#maxHistory) {
+      const discarded = this.#logs.splice(0, this.#logs.length - this.#maxHistory);
+      for (const owner of new Set([this.#out, this.#err])) owner?.remove(discarded);
     }
 
     const logs = this.#logs;
-    const options = { ["#log"]: log, trace: this.#trace, colors: this.#colors };
+    const options = { ["#log"]: log, stdout: null, trace: this.#trace, colors: this.#colors };
     const refresh = () => {
-      if (this.#debug || !IS_TTY || !this.#active) return;
-      this.#stdclear?.();
-      for (let i = 0, len = this.#logs.length; i < len; i++) {
-        const log = this.#logs[i];
-        if (log.type === "error" && this.#stderr)
-          this.#stderr.write(
-            log.toString({
-              time: this.#time,
-              trace: !!this.#trace,
-              colors: /** @type {any} */ (this.#colors),
-              timers: this.#timers,
-            }),
-          );
-        else if (this.#stdout)
-          this.#stdout.write(
-            log.toString({
-              time: this.#time,
-              trace: !!this.#trace,
-              colors: /** @type {any} */ (this.#colors),
-              timers: this.#timers,
-            }),
-          );
+      const nextStream = log.type === "error" && this.#stderr ? this.#stderr : this.#stdout;
+      const nextOutput = log.type === "error" && this.#stderr ? this.#err : this.#out;
+      const previousOutput = output;
+      if (entry) {
+        if (nextStream) entry.stream = nextStream;
+        if (nextOutput !== output) {
+          output?.remove([log]);
+          nextOutput?.add(entry);
+        }
       }
+      output = nextOutput;
+      if (this.#debug || !this.#active) return;
+      if (previousOutput !== output) previousOutput?.refresh();
+      output?.refresh();
     };
 
     return {
       replace(replacer, ...data) {
+        if (!logs.includes(log)) return this;
         if (typeof replacer === "function" && data.length === 0) {
           // @ts-ignore
           const console = new Console(options);
@@ -603,13 +802,14 @@ export class Console extends BoundClass {
                 "timeEnd",
                 "enable",
                 "disable",
+                "flush",
               ].indexOf(methods[i]) !== -1
             )
               continue;
             actions[methods[i]] = (...args) => console[methods[i]](...args);
           }
           const result = replacer(actions, log.data);
-          if (!(result instanceof Log)) log.data = result;
+          if (!(result instanceof Log) && result !== undefined) log.data = Array.isArray(result) ? result : [result];
         } else log.data = (data.unshift(replacer), data);
         refresh();
         return this;
@@ -618,6 +818,7 @@ export class Console extends BoundClass {
         for (let i = 0, len = logs.length; i < len; i++) {
           if (logs[i] !== log) continue;
           logs.splice(i, 1);
+          output?.remove([log]);
           refresh();
           return;
         }
