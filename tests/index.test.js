@@ -395,6 +395,7 @@ suite("Console", () => {
     error["cause"] = error;
     const map = new Map();
     map.set("self", map);
+    /** @type {Set<bigint | Set<unknown>>} */
     const set = new Set([1n]);
     set.add(set);
     const result = JSON.parse(format([{ error, map, set }]));
@@ -418,6 +419,7 @@ suite("Console", () => {
     logger.table({ answer: 42, missing: null });
     expect(text).toInclude("| answer  | 42");
     expect(text).toInclude("| missing | null");
+    // @ts-expect-error Verifies rejection of an invalid column selector.
     expect(() => logger.table([], "name")).toThrow("array of strings");
     logger.table([]);
     logger.table("plain");
@@ -505,10 +507,11 @@ suite("Console", () => {
   });
 
   test("Web-style writers wait for readiness before writing", async () => {
+    /** @type {(() => void) | undefined} */
     let ready;
     let text = "";
     const stream = {
-      ready: new Promise((resolve) => (ready = resolve)),
+      ready: new Promise((resolve) => (ready = () => resolve(undefined))),
       write: async (value) => {
         text += value;
       },
@@ -516,6 +519,7 @@ suite("Console", () => {
     const logger = new Console({ stdout: stream, time: false, trace: false });
     logger.log("ready");
     expect(text).toEqual("");
+    if (!ready) throw new Error("Writer readiness callback was not initialized");
     ready();
     await logger.flush();
     expect(text).toEqual("ready\n");

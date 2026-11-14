@@ -412,7 +412,7 @@ export class Console extends BoundClass {
 
   /**
    * @typedef {Object} ConsoleManipulation
-   * @property {((...data: any[]) => void) | ((replacer: (console: Console, previousData: any) => any) => void)} replace - Replaces the log entry with new data.
+   * @property {((...data: any[]) => ConsoleManipulation) & ((replacer: (console: Console, previousData: any) => any) => ConsoleManipulation)} replace - Replaces the log entry with new data.
    * @property {() => void} remove - Removes the log entry.
    */
 
@@ -638,7 +638,7 @@ export class Console extends BoundClass {
    * Logs a time measurement end.
    *
    * @param {string} key - The key of the time measurement.
-   * @param {boolean} print - Whether to print the time difference. Defaults to true.
+   * @param {boolean} [print] - Whether to print the time difference. Defaults to true.
    */
   timeEnd(key, print) {
     if (!this.#timers[key]) return;
